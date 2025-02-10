@@ -7,6 +7,7 @@ project(
         'prefix=/home/arca/Documents/codebases/pred_v2/output',
     ],
 )
+add_project_arguments('-O3', language: 'cpp')
 
 ### Dependency declaration
 spdlog = dependency('spdlog')
