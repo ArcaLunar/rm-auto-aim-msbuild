@@ -5,9 +5,9 @@ project(
     default_options: [
         'cpp_std=c++20',
         'prefix=/home/arca/Documents/codebases/pred_v2/output',
+        'optimization=3',
     ],
 )
-add_project_arguments('-O3', language: 'cpp')
 
 ### Dependency declaration
 spdlog = dependency('spdlog')
