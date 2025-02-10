@@ -1,0 +1,7 @@
+port_name = ["/dev/ttyACM0", "/dev/ttyACM1"]
+baud_rate = 460800
+parity = 0
+data_bit = 8
+stop_bit = 1
+sync = true
+send_interval = 0 #! (milliseconds)

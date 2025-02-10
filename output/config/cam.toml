@@ -1,0 +1,9 @@
+source_type = "hikcamera"
+path_to_source = "1"
+width = 1440
+height = 1080
+exposure_time = 1000
+gamma_enable = true
+gamma = 0.5
+pixel_format = "BayerRG8"
+enemy_color = "red"
