@@ -12,7 +12,9 @@ project(
 spdlog = dependency('spdlog')
 opencv = dependency('opencv4')
 eigen = dependency('eigen3')
-# tomlpp = dependency('tomlplusplus')
+
+mvs = subproject('mvs')
+mvs_dep = mvs.get_variable('mvs_dep')
 
 ### Directories
 binary_dir = './output'
