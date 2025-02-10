@@ -90,8 +90,11 @@ class HikCamera {
   public:
     HikCamera();
     ~HikCamera();
+    /// \brief 获取相机的处理 agent
     void *GetHandle() { return handle_; }
+    /// \brief （辅助函数）将捕获的图像转换为 OpenCV 矩阵
     static cv::Mat ConvertRawToMat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
+    /// \brief 获取一帧图像 (`cv::Mat`)
     cv::Mat GetFrame();
 };
 

@@ -12,6 +12,19 @@
 
 namespace AutoAim {
 
+struct LightBarConfig {
+    double min_ratio, max_ratio;
+    double max_angle;
+
+    LightBarConfig(std::string path = "../config/detection_tr.toml");
+};
+
+struct ArmorConfig {
+    int binary_threshold;
+
+    ArmorConfig(std::string path = "../config/detection_tr.toml");
+};
+
 /**
  * !! 灯条 class
  * @ref chenjunnn/rm_auto_aim
@@ -23,22 +36,8 @@ struct LightBar : public cv::RotatedRect {
     cv::Point2f top, bottom;
 
     explicit LightBar() = default;
-    explicit LightBar(cv::RotatedRect &rect) : cv::RotatedRect{rect} {
-        cv::Point2f vertices[4];
-        rect.points(vertices);
-        std::copy(vertices, vertices + 4, points.begin());
-
-        std::sort(points.begin(), points.end(), [](const cv::Point2f &a, const cv::Point2f &b) {
-            return a.y < b.y;
-        });
-        top    = (points[0] + points[1]) / 2;
-        bottom = (points[2] + points[3]) / 2;
-        length = cv::norm(top - bottom);
-        width  = cv::norm(points[0] - points[1]);
-
-        tilt_angle = std::atan2(std::abs(top.x - bottom.x), std::abs(top.y - bottom.y));
-        tilt_angle = tilt_angle * kRadianToDegree;
-    }
+    explicit LightBar(cv::RotatedRect &rect);
+    bool isValid(const LightBarConfig &config) const;
 };
 
 struct Armor {

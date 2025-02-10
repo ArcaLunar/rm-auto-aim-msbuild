@@ -1,6 +1,7 @@
 #ifndef __DETECTOR_HPP__
 #define __DETECTOR_HPP__
 
+#include "armor.hpp"
 #include "config.hpp"
 #include "id_classify.hpp"
 #include "structs.hpp"
@@ -12,14 +13,13 @@
 
 namespace AutoAim {
 
-struct LightBarConfig {
-    double min_ratio, max_ratio;
-    double max_angle;
+class Detector {
+    LightBarConfig light_bar_config_;
+    ArmorConfig armor_config_;
 
-    LightBarConfig(std::string path = "../config/detection_tr.toml");
+  public:
+    Detector(std::string path = "../config/detection_tr.toml");
 };
-
-struct ArmorConfig {};
 
 } // namespace AutoAim
 
