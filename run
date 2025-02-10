@@ -14,4 +14,6 @@ elif [ "compile" = "$cmd" ]; then
     meson compile -C $build_dir
 elif [ "install" = "$cmd" ]; then
     meson install -C $build_dir
+elif [ "exec" = "$cmd" ]; then
+    ./$build_dir/app/auto_aim
 fi

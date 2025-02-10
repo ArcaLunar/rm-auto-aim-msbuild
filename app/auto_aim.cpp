@@ -3,6 +3,8 @@
 
 int main() {
     spdlog::info("starting auto_aim");
-
     spdlog::info("activating camera");
+    
+    HikCamera camera;
+    
 }

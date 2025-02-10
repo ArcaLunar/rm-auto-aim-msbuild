@@ -25,26 +25,32 @@ enum HikCameraProperties {
 };
 
 struct CameraConfig {
-    bool AcquisitionFrameRateEnable;
-    int AcquisitionFrameRate;
+    bool acquisition_frame_rate_enable{false};
+    int acquisition_frame_rate;
 
-    int Width, Height;
-    double exposure_time;
+    int width, height;
 
-    bool adjustable_gamma;
+    int auto_exposure{0};
+    double exposure_time{1000};
+
+    int adc_bit_depth{2};
+
+    bool adjustable_gamma{true};
     int gamma;
 
-    int gain_auto;
+    int gain_auto{0};
 
     bool adjustable_saturation;
     int saturation;
 
     int offset_x, offset_y;
 
-    int TriggerMode;
-    int TriggerSource;
+    int trigger_mode{MV_CAM_TRIGGER_MODE::MV_TRIGGER_MODE_OFF};
+    int trigger_source;
     int line_selector;
-    int PayloadSize;
+    int payload_size;
+
+    std::string pixel_format{"BayerRG8"};
 };
 
 class HikCamera {
@@ -65,7 +71,7 @@ class HikCamera {
     void OpenCamera();
 
     /// \brief 设置一系列参数配置
-    void LoadConfig();
+    CameraConfig LoadConfig();
     void Setup();
 
     /// \brief 初始化图像捕获

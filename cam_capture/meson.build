@@ -2,12 +2,11 @@ cam_capture = shared_library(
     'cam_capture',
     'cam_capture.cpp',
     dependencies: [
-        opencv,
-        spdlog,
-        mvs_dep,
+        all_dep,
         config_dep,
     ],
     install: true,
+    install_dir: join_paths(get_option('prefix'), 'bin'),
 )
 
 cam_capture_dep = declare_dependency(

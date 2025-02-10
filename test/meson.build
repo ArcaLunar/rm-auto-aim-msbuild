@@ -6,4 +6,5 @@ read_config = executable(
     ],
 )
 
+#! set tests
 test('read_config', read_config)

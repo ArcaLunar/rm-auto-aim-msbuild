@@ -1,6 +1,8 @@
 #include "cam_capture.hpp"
 
 #include "MvCameraControl.h"
+#include "toml++/impl/parse_error.hpp"
+#include "toml++/impl/parser.hpp"
 
 #include <opencv2/core/persistence.hpp>
 #include <opencv2/highgui.hpp>
@@ -8,6 +10,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <spdlog/spdlog.h>
+#include <toml++/toml.hpp>
 
 constexpr char ConfigFilePath[] = "../../config/camera_config.json";
 
@@ -153,37 +156,69 @@ cv::Mat HikCamera::ConvertRawToMat(
     return result;
 }
 
-void HikCamera::LoadConfig() {
+CameraConfig HikCamera::LoadConfig() {
     // ! 打开配置文件
-    cv::FileStorage fs(ConfigFilePath, cv::FileStorage::READ);
     spdlog::info("reading from .config");
 
-    fs["Width"] >> this->config_.Width;
-    fs["Height"] >> this->config_.Height;
-    spdlog::info(
-        "reading from config: W={}, H={}",
-        this->config_.Width,
-        this->config_.Height
-    );
+    toml::table T;
+    struct CameraConfig config;
+    try {
+        T = toml::parse_file("../config/cam.toml");
 
-    fs["TriggerMode"] >> this->config_.TriggerMode;
-    fs["AcquisitionFrameRateEnable"] >> this->config_.AcquisitionFrameRateEnable;
+        config.pixel_format     = T["pixel_format"].value_or("BayerRG8");
+        config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
+        config.trigger_mode     = T["trigger_mode"].value_or(0);
+        config.auto_exposure    = T["auto_exposure"].value_or(0);
+        config.exposure_time    = T["exposure_time"].value_or(1000);
+        config.gain_auto        = T["gain_auto"].value_or(0);
+        config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
+        config.gamma            = T["gamma"].value_or(1.0);
+    } catch (const toml::parse_error &e) {
+        spdlog::error("error parsing config file: {}, using fallback", e.what());
+    }
+
+    return config;
 }
 
 void HikCamera::Setup() {
-    LoadConfig();
+    auto config = LoadConfig();
 
-    // 辅助匿名函数
-    auto SetAttr = [&](std::string attr, auto val) {
-        spdlog::info("setting camera, {} -> {}", attr, val);
-        int result = MV_CC_SetEnumValue(this->handle_, attr.c_str(), val);
-        if (result != MV_OK)
-            spdlog::critical("setting {} to {} failed", attr, val);
-        spdlog::info("setting {} to {} succeeded.", attr, val);
-    };
+#define SET_PARAM(func, value, item)                              \
+    if (MV_CC_Set##func(this->handle_, item, value) != MV_OK) {   \
+        spdlog::critical("setting {} to {} failed", item, value); \
+        exit(-1);                                                 \
+    }                                                             \
+    spdlog::info("setting {} to {} succeeded.", item, value);
 
-    // Trigger mode 设置为 off
-    SetAttr("TriggerMode", this->config_.TriggerMode);
+    //* Pixel Format
+    // if (config.pixel_format == "BayerRG8") {
+    //     SET_PARAM(EnumValue, PixelType_Gvsp_BayerRG8, "PixelFormat");
+    // } else if (config.pixel_format == "BayerGB8") {
+    //     SET_PARAM(EnumValue, PixelType_Gvsp_BayerGB8, "PixelFormat");
+    // } else if (config.pixel_format == "BGR8") {
+    //     SET_PARAM(EnumValue, PixelType_Gvsp_BGR8_Packed, "PixelFormat");
+    // } else {
+    //     spdlog::critical("unsupported pixel format");
+    //     exit(-1);
+    // }
+    //* Trigger mode
+    SET_PARAM(EnumValue, config.trigger_mode, "TriggerMode");
+    //* PayLoad
+    // SET_PARAM(IntValue, config.payload_size, "PayloadSize");
+    //* Depth
+    SET_PARAM(EnumValue, config.adc_bit_depth, "ADCBitDepth");
+    //* 设置曝光
+    SET_PARAM(EnumValue, config.auto_exposure, "ExposureAuto");
+    SET_PARAM(FloatValue, config.exposure_time, "ExposureTime");
+    //* Gain
+    SET_PARAM(EnumValue, config.gain_auto, "GainAuto");
+    //* Set Gamma
+    if (config.adjustable_gamma) {
+        SET_PARAM(EnumValue, 1, "GammaSelector");
+        SET_PARAM(FloatValue, config.gamma, "Gamma");
+    }
+
+#undef SET_PARAM
 }
 
 void HikCamera::InitRetrieveImage() {
