@@ -72,9 +72,11 @@ std::vector<AutoAim::Armor> AutoAim::Detector::MatchLightBars(const std::vector<
         for (auto light2 = light1 + 1; light2 != lights.end(); light2++) {
             if (light1->color != COLOR_TO_DETECT || light2->color != COLOR_TO_DETECT) continue;
 
+            if (this->ContainAnotherLightBar(*light1, *light2, lights)) continue;
             if (Armor::isValid(this->armor_config_, *light1, *light2)) armors.emplace_back(*light1, *light2);
         }
     }
+    return armors;
 }
 
 bool AutoAim::Detector::ContainAnotherLightBar(
