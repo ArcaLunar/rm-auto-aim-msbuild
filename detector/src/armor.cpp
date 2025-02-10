@@ -9,9 +9,7 @@ AutoAim::LightBar::LightBar(cv::RotatedRect &rect) : cv::RotatedRect{rect} {
     rect.points(vertices);
     std::copy(vertices, vertices + 4, points.begin());
 
-    std::sort(points.begin(), points.end(), [](const cv::Point2f &a, const cv::Point2f &b) {
-        return a.y < b.y;
-    });
+    std::sort(points.begin(), points.end(), [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
     top    = (points[0] + points[1]) / 2;
     bottom = (points[2] + points[3]) / 2;
     length = cv::norm(top - bottom);
@@ -56,4 +54,41 @@ AutoAim::ArmorConfig::ArmorConfig(std::string path) {
         spdlog::error("Error parsing config file \"{}\" for ArmorConfig, using fallback", e.what());
     }
     spdlog::info("ArmorConfig initializzation done.");
+}
+
+//! Armor
+AutoAim::Armor::Armor(const LightBar &l1, const LightBar &l2) : left(l1), right(l2) {
+    if (left.center.x > right.center.x) std::swap(left, right);
+    center = (left.center + right.center) / 2;
+}
+
+bool AutoAim::Armor::isValid(const ArmorConfig &config, const LightBar &left, const LightBar &right) {
+    double lightbar_length_ratio = std::min(left.length, right.length) / std::max(left.length, right.length);
+    bool is_lightbar_length_ok   = lightbar_length_ratio > config.min_light_ratio;
+
+    // 矩形的长宽比
+    double avg_light_length = (left.length + right.length) / 2;
+    double center_distance  = cv::norm(left.center - right.center) / avg_light_length;
+    bool center_dist_ok
+        = (config.min_small_center_distance <= center_distance && center_distance <= config.max_small_center_distance);
+    center_dist_ok
+        |= (config.min_large_center_distance <= center_distance && center_distance <= config.max_large_center_distance);
+
+    // 矩形的朝向角度
+    cv::Vec2f dif = left.center - right.center;
+    double angle  = std::abs(std::atan2(dif[1], dif[0])) * kRadianToDegree;
+    bool angle_ok = angle <= config.max_angle;
+
+    bool is_armor = is_lightbar_length_ok && center_dist_ok && angle_ok;
+
+    // 输出调试信息
+    spdlog::info(
+        "Armor(length_ratio: {}, center_distance: {}, angle: {}) is_armor: {}",
+        lightbar_length_ratio,
+        center_distance,
+        angle,
+        is_armor
+    );
+
+    return is_armor;
 }

@@ -6,6 +6,7 @@ headers = files(
     'include/id_classify.hpp',
 )
 sources = files(
+    'src/armor.cpp',
     'src/detector.cpp',
 )
 

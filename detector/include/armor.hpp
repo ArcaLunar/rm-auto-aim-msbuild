@@ -21,6 +21,10 @@ struct LightBarConfig {
 
 struct ArmorConfig {
     int binary_threshold;
+    double min_light_ratio;
+    double min_small_center_distance, max_small_center_distance;
+    double min_large_center_distance, max_large_center_distance;
+    double max_angle;
 
     ArmorConfig(std::string path = "../config/detection_tr.toml");
 };
@@ -36,10 +40,17 @@ struct LightBar : public cv::RotatedRect {
     cv::Point2f top, bottom;
 
     explicit LightBar() = default;
+
+    // 从配置文件中读取灯条的配置
     explicit LightBar(cv::RotatedRect &rect);
+
+    /// 判断灯条是否合法
     bool isValid(const LightBarConfig &config) const;
 };
 
+/**
+ * !! 装甲板 class
+ */
 struct Armor {
     //* 灯条
     LightBar left, right; // 左右灯条
@@ -52,11 +63,10 @@ struct Armor {
     std::string number;               // 识别的数字
 
     Armor() = default;
-    explicit Armor(const LightBar &l1, const LightBar &l2) {
-        left = l1, right = l2;
-        if (left.center.x > right.center.x) std::swap(left, right);
-        center = (left.center + right.center) / 2;
-    }
+    explicit Armor(const LightBar &l1, const LightBar &l2);
+
+    // 判断装甲板是否合法
+    static bool isValid(const ArmorConfig &config, const LightBar& left, const LightBar& right);
 };
 
 } // namespace AutoAim
