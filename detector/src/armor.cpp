@@ -25,7 +25,9 @@ bool AutoAim::LightBar::isValid(const LightBarConfig &config) const {
     bool angle_ok = tilt_angle <= config.max_angle;
 
     bool is_light = ratio_ok && angle_ok;
-    spdlog::info("LightBar(ratio: {}, angle: {}) is_light: {}", ratio, tilt_angle, is_light);
+    
+    if constexpr (!SUPPRESS_VALIDATION_SPDLOG)
+        spdlog::info("LightBar(ratio: {}, angle: {}) is_light: {}", ratio, tilt_angle, is_light);
 
     return is_light;
 }
@@ -82,13 +84,15 @@ bool AutoAim::Armor::isValid(const ArmorConfig &config, const LightBar &left, co
     bool is_armor = is_lightbar_length_ok && center_dist_ok && angle_ok;
 
     // 输出调试信息
-    spdlog::info(
-        "Armor(length_ratio: {}, center_distance: {}, angle: {}) is_armor: {}",
-        lightbar_length_ratio,
-        center_distance,
-        angle,
-        is_armor
-    );
+    if constexpr (!SUPPRESS_VALIDATION_SPDLOG) {
+        spdlog::info(
+            "Armor(length_ratio: {}, center_distance: {}, angle: {}) is_armor: {}",
+            lightbar_length_ratio,
+            center_distance,
+            angle,
+            is_armor
+        );
+    }
 
     return is_armor;
 }

@@ -1,4 +1,5 @@
 #include "armor.hpp"
+#include "config.hpp"
 #include "detector.hpp"
 #include <opencv2/opencv.hpp>
 
@@ -49,9 +50,44 @@ std::vector<AutoAim::LightBar> AutoAim::Detector::DetectLightBars(const cv::Mat 
 
             // 用红色、蓝色灯条的像素值的和 判断灯条颜色
             light.color = sum_r > sum_b ? "red" : "blue";
+            spdlog::info(
+                "detected lightbar: color={}, angle={}, length={}, width={}",
+                light.color,
+                light.angle,
+                light.length,
+                light.width
+            );
             lights.push_back(light);
         }
     }
 
     return lights;
+}
+
+std::vector<AutoAim::Armor> AutoAim::Detector::MatchLightBars(const std::vector<AutoAim::LightBar> &lights) {
+    std::vector<AutoAim::Armor> armors;
+
+    // 两两枚举进行匹配
+    for (auto light1 = lights.begin(); light1 != lights.end(); light1++) {
+        for (auto light2 = light1 + 1; light2 != lights.end(); light2++) {
+            if (light1->color != COLOR_TO_DETECT || light2->color != COLOR_TO_DETECT) continue;
+
+            if (Armor::isValid(this->armor_config_, *light1, *light2)) armors.emplace_back(*light1, *light2);
+        }
+    }
+}
+
+bool AutoAim::Detector::ContainAnotherLightBar(
+    const AutoAim::LightBar &light1, const AutoAim::LightBar &light2, const std::vector<AutoAim::LightBar> &lights
+) {
+    auto points = std::vector<cv::Point2f>{light1.top, light1.bottom, light2.top, light2.bottom};
+    auto rect   = cv::boundingRect(points);
+
+    for (const auto &light : lights) {
+        if (light.center == light1.center || light.center == light2.center) continue;
+
+        if (rect.contains(light.center) || rect.contains(light.top) || rect.contains(light.bottom)) return true;
+    }
+
+    return false;
 }
