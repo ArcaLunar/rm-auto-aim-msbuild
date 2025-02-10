@@ -38,10 +38,10 @@ struct LightBar : public cv::RotatedRect {
     double tilt_angle;               // 倾斜角度
     std::vector<cv::Point2f> points; // 矩形的四个顶点
     cv::Point2f top, bottom;
-
-    explicit LightBar() = default;
+    std::string color;
 
     // 从配置文件中读取灯条的配置
+    explicit LightBar() = default;
     explicit LightBar(cv::RotatedRect &rect);
 
     /// 判断灯条是否合法

@@ -1,4 +1,6 @@
+#include "armor.hpp"
 #include "detector.hpp"
+#include <opencv2/opencv.hpp>
 
 //! Detector
 AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_config_(path) {
@@ -11,6 +13,45 @@ cv::Mat AutoAim::Detector::PreprocessImage(const cv::Mat &src) {
 
     cv::Mat binary;
     cv::threshold(gray, binary, this->armor_config_.binary_threshold, 255, cv::THRESH_BINARY);
-    
+
     return binary;
+}
+
+std::vector<AutoAim::LightBar> AutoAim::Detector::DetectLightBars(const cv::Mat &rgb, const cv::Mat &binary) {
+    // 用 contour 轮廓找出灯条
+    std::vector<std::vector<cv::Point2f>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::vector<LightBar> lights;
+    for (const auto &contour : contours) {
+        if (contour.size() < 5) continue;
+
+        auto r_rect = cv::minAreaRect(contour);
+        auto light  = LightBar(r_rect);
+
+        if (light.isValid(this->light_bar_config_)) {
+            auto rect = light.boundingRect();
+            // 过滤不可能的灯条
+            if (rect.x < 0 || rect.y < 0 || rect.x + rect.width > rgb.cols || rect.y + rect.height > rgb.rows
+                || rect.width < 0 || rect.height < 0) {
+                continue;
+            }
+
+            int sum_r = 0, sum_b = 0;
+            auto roi = rgb(rect); // RGB 下灯条区域
+            for (int i = 0; i < roi.rows; i++) {
+                for (int j = 0; j < roi.cols; j++) {
+                    sum_r += roi.at<cv::Vec3b>(i, j)[0];
+                    sum_b += roi.at<cv::Vec3b>(i, j)[2];
+                }
+            }
+
+            // 用红色、蓝色灯条的像素值的和 判断灯条颜色
+            light.color = sum_r > sum_b ? "red" : "blue";
+            lights.push_back(light);
+        }
+    }
+
+    return lights;
 }
