@@ -2,7 +2,7 @@ executable(
     'auto_aim',
     'auto_aim.cpp',
     dependencies: [
-        spdlog,
+        all_dep,
         cam_capture_dep,
     ],
     install: true,
