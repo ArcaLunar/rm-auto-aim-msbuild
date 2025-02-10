@@ -18,11 +18,13 @@ mvs_dep = mvs.get_variable('mvs_dep')
 
 ### Directories
 binary_dir = './output'
-public_headers = include_directories('include')
+# public_headers = include_directories('include')
 
 ### Structs
 subdir('structs')
 subdir('config')
+
+subdir('cam_capture')
 
 # subdir('include')
 subdir('detector')
