@@ -4,7 +4,7 @@ project(
     version: '0.1',
     default_options: [
         'cpp_std=c++20',
-        'prefix=/home/arca/Documents/codebases/prediction/output',
+        'prefix=/home/arca/Documents/codebases/pred_v2/output',
     ],
 )
 
@@ -29,3 +29,5 @@ subdir('cam_capture')
 # subdir('include')
 subdir('detector')
 # subdir('test')
+
+subdir('app')

@@ -1,0 +1,17 @@
+#!/usr/bin/zsh
+cmd=$1
+build_dir="./builddir"
+
+if [ "test" = "$cmd" ]; then
+    if [ $# -gt 1 ]; then
+        meson test $2 -C $build_dir
+    else
+        meson test -C $build_dir
+    fi
+elif [ "config" = "$cmd" ]; then
+    meson setup $build_dir --wipe
+elif [ "compile" = "$cmd" ]; then
+    meson compile -C $build_dir
+elif [ "install" = "$cmd" ]; then
+    meson install -C $build_dir
+fi
