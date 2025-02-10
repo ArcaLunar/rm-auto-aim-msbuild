@@ -42,6 +42,6 @@ subdir('cam_capture')
 
 # subdir('include')
 subdir('detector')
-# subdir('test')
+subdir('test')
 
 subdir('app')
