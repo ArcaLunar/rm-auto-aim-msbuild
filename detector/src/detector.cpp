@@ -93,3 +93,13 @@ bool AutoAim::Detector::ContainAnotherLightBar(
 
     return false;
 }
+
+void AutoAim::Detector::draw_results_to_image(cv::Mat &img, const std::vector<Armor> &armors) {
+    if constexpr (!SHOW_ANNOTATED_IMAGE) return;
+
+    // draw armors
+    for(const auto &armor: armors) {
+        cv::line(img, armor.left.top, armor.right.bottom, cv::Scalar(0, 255, 0), 2);
+        cv::line(img, armor.left.bottom, armor.right.top, cv::Scalar(0, 255, 0), 2);
+    }
+}

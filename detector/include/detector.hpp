@@ -2,11 +2,6 @@
 #define __DETECTOR_HPP__
 
 #include "armor.hpp"
-#include "config.hpp"
-#include "id_classify.hpp"
-#include "structs.hpp"
-
-#include <memory>
 
 #include <opencv2/core.hpp>
 #include <spdlog/spdlog.h>
@@ -30,6 +25,8 @@ class Detector {
 
     // 检测两个匹配的灯条之间是否还有其他灯条
     bool ContainAnotherLightBar(const LightBar &light1, const LightBar &light2, const std::vector<LightBar> &lights);
+
+    void draw_results_to_image(cv::Mat &img, const std::vector<Armor>& armors);
 
   public:
     // 载入配置文件
