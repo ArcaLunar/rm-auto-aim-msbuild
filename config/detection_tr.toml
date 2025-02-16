@@ -18,6 +18,10 @@ max_angle = 45.0
 [classifier]
 threshold = 0.6
 
+[mlp]
+model_path = "./mlp.onnx"
+label_path = "./label.txt"
+
 # [light_bar]
 # min_area = 30.0
 # max_area = 5e4
