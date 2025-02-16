@@ -1,5 +1,5 @@
-#ifndef __ARMOR_HPP__
-#define __ARMOR_HPP__
+#ifndef ARMOR_HPP_
+#define ARMOR_HPP
 
 #include <opencv2/core/types.hpp>
 #include <opencv2/opencv.hpp>
@@ -16,7 +16,7 @@ struct LightBarConfig {
     double min_ratio, max_ratio;
     double max_angle;
 
-    LightBarConfig(std::string path = "../config/detection_tr.toml");
+    explicit LightBarConfig(std::string path = "../config/detection_tr.toml");
 };
 
 struct ArmorConfig {
@@ -26,12 +26,12 @@ struct ArmorConfig {
     double min_large_center_distance, max_large_center_distance;
     double max_angle;
 
-    ArmorConfig(std::string path = "../config/detection_tr.toml");
+    explicit ArmorConfig(std::string path = "../config/detection_tr.toml");
 };
 
 /**
- * !! 灯条 class
- * @ref chenjunnn/rm_auto_aim
+ * @brief 灯条 class
+ * @remark chenjunnn/rm_auto_aim
  */
 struct LightBar : public cv::RotatedRect {
     double length, width;            // 灯条的长度和宽度
@@ -42,14 +42,14 @@ struct LightBar : public cv::RotatedRect {
 
     // 从配置文件中读取灯条的配置
     explicit LightBar() = default;
-    explicit LightBar(cv::RotatedRect &rect);
+    explicit LightBar(const cv::RotatedRect &rect);
 
     /// 判断灯条是否合法
     bool isValid(const LightBarConfig &config) const;
 };
 
 /**
- * !! 装甲板 class
+ * @brief 装甲板 class
  */
 struct Armor {
     //* 灯条
@@ -59,7 +59,7 @@ struct Armor {
     //* 装甲板上的数字/图案
     cv::Mat number_img;               // 用于识别数字的装甲板图像
     double confidence;                // 识别的置信度
-    std::string classfication_result; // 识别的结果
+    std::string classification_result; // 识别的结果
     std::string number;               // 识别的数字
 
     Armor() = default;

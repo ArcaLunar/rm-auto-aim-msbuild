@@ -4,12 +4,12 @@
 #include <toml++/toml.hpp>
 
 //! LightBar
-AutoAim::LightBar::LightBar(cv::RotatedRect &rect) : cv::RotatedRect{rect} {
+AutoAim::LightBar::LightBar(const cv::RotatedRect &rect) : cv::RotatedRect{rect} {
     cv::Point2f vertices[4];
     rect.points(vertices);
-    std::copy(vertices, vertices + 4, points.begin());
+    std::copy_n(vertices, 4, points.begin());
 
-    std::sort(points.begin(), points.end(), [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
+    std::ranges::sort(points, [](const cv::Point2f &a, const cv::Point2f &b) { return a.y < b.y; });
     top    = (points[0] + points[1]) / 2;
     bottom = (points[2] + points[3]) / 2;
     length = cv::norm(top - bottom);
@@ -20,13 +20,13 @@ AutoAim::LightBar::LightBar(cv::RotatedRect &rect) : cv::RotatedRect{rect} {
 }
 
 bool AutoAim::LightBar::isValid(const LightBarConfig &config) const {
-    double ratio  = length / width;
-    bool ratio_ok = config.min_ratio <= ratio && ratio <= config.max_ratio;
-    bool angle_ok = tilt_angle <= config.max_angle;
+    double ratio        = length / width;
+    const bool ratio_ok = config.min_ratio <= ratio && ratio <= config.max_ratio;
+    const bool angle_ok = tilt_angle <= config.max_angle;
 
     bool is_light = ratio_ok && angle_ok;
-    
-    if constexpr (!SUPPRESS_VALIDATION_SPDLOG)
+
+    if constexpr (not SUPPRESS_VALIDATION_SPDLOG)
         spdlog::info("LightBar(ratio: {}, angle: {}) is_light: {}", ratio, tilt_angle, is_light);
 
     return is_light;
@@ -66,10 +66,10 @@ AutoAim::Armor::Armor(const LightBar &l1, const LightBar &l2) : left(l1), right(
 
 bool AutoAim::Armor::isValid(const ArmorConfig &config, const LightBar &left, const LightBar &right) {
     double lightbar_length_ratio = std::min(left.length, right.length) / std::max(left.length, right.length);
-    bool is_lightbar_length_ok   = lightbar_length_ratio > config.min_light_ratio;
+    const bool is_lightbar_length_ok   = lightbar_length_ratio > config.min_light_ratio;
 
     // 矩形的长宽比
-    double avg_light_length = (left.length + right.length) / 2;
+    const double avg_light_length = (left.length + right.length) / 2;
     double center_distance  = cv::norm(left.center - right.center) / avg_light_length;
     bool center_dist_ok
         = (config.min_small_center_distance <= center_distance && center_distance <= config.max_small_center_distance);
