@@ -33,10 +33,10 @@ struct CameraConfig {
     int auto_exposure{0};
     double exposure_time{1000};
 
-    int adc_bit_depth{2};
+    int adc_bit_depth{8};
 
     bool adjustable_gamma{true};
-    int gamma;
+    double gamma{1.0};
 
     int gain_auto{0};
 
