@@ -18,17 +18,17 @@ HikCamera::HikCamera() {
     // 初始化 SDK
     MV_CC_Initialize();
     // 枚举设备
-    this->EnumDevices();
+    this->enum_devices();
     // 输出设备信息
-    this->DebugDevices();
+    this->debug_devices();
     // 创建句柄
-    this->CreateHandle();
+    this->create_handle();
     // 打开相机
-    this->OpenCamera();
+    this->open_camera();
     // 设置相机参数
-    this->Setup();
+    this->setup();
     // 初始化图像捕获，准备捕获图像
-    this->InitRetrieveImage();
+    this->initialize_image_retrieval();
 }
 
 HikCamera::~HikCamera() {
@@ -56,7 +56,7 @@ HikCamera::~HikCamera() {
     spdlog::info("exit successfully");
 }
 
-void HikCamera::EnumDevices() {
+void HikCamera::enum_devices() {
     // 枚举相机设备
     spdlog::info("retriving available cam list ...");
     std::memset(&this->devicelist_, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
@@ -70,7 +70,7 @@ void HikCamera::EnumDevices() {
     spdlog::info("retrieving succeed");
 }
 
-void HikCamera::DebugDevices() {
+void HikCamera::debug_devices() {
     // 相机的设备 ID
     spdlog::info("finding Hik Camera");
     if (devicelist_.nDeviceNum == 0) {
@@ -81,13 +81,13 @@ void HikCamera::DebugDevices() {
         MV_CC_DEVICE_INFO *pDeviceInfo = devicelist_.pDeviceInfo[i];
         spdlog::info("checking device {}", i);
         if (pDeviceInfo == nullptr) break;
-        this->PrintDeviceInfo(pDeviceInfo);
+        this->print_device_info(pDeviceInfo);
         camIndex = i;
     }
     spdlog::info("finding succeed");
 }
 
-void HikCamera::PrintDeviceInfo(MV_CC_DEVICE_INFO *pDeviceInfo) {
+void HikCamera::print_device_info(MV_CC_DEVICE_INFO *pDeviceInfo) {
     if (pDeviceInfo == nullptr) { // 设备不存在
         spdlog::critical("device info pointer is null.");
         exit(-1);
@@ -103,7 +103,7 @@ void HikCamera::PrintDeviceInfo(MV_CC_DEVICE_INFO *pDeviceInfo) {
     }
 }
 
-void HikCamera::CreateHandle() {
+void HikCamera::create_handle() {
     spdlog::info("creating handle_ for camera {}", this->camIndex);
     int result = MV_CC_CreateHandle(
         &this->handle_, devicelist_.pDeviceInfo[camIndex]
@@ -115,7 +115,7 @@ void HikCamera::CreateHandle() {
     spdlog::info("create success");
 }
 
-void HikCamera::OpenCamera() {
+void HikCamera::open_camera() {
     spdlog::info("opening camera");
     int result = MV_CC_OpenDevice(this->handle_);
     if (result != MV_OK) {
@@ -125,7 +125,7 @@ void HikCamera::OpenCamera() {
     spdlog::info("open succeed");
 }
 
-cv::Mat HikCamera::ConvertRawToMat(
+cv::Mat HikCamera::convert_raw_to_mat(
     MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRAME_OUT *pstImage
 ) {
     cv::Mat result;
@@ -156,7 +156,7 @@ cv::Mat HikCamera::ConvertRawToMat(
     return result;
 }
 
-CameraConfig HikCamera::LoadConfig() {
+CameraConfig HikCamera::load_config() {
     // ! 打开配置文件
     spdlog::info("reading from .config");
 
@@ -180,8 +180,8 @@ CameraConfig HikCamera::LoadConfig() {
     return config;
 }
 
-void HikCamera::Setup() {
-    auto config = LoadConfig();
+void HikCamera::setup() {
+    auto config = load_config();
 
 #define SET_PARAM(func, value, item)                              \
     if (MV_CC_Set##func(this->handle_, item, value) != MV_OK) {   \
@@ -221,7 +221,7 @@ void HikCamera::Setup() {
 #undef SET_PARAM
 }
 
-void HikCamera::InitRetrieveImage() {
+void HikCamera::initialize_image_retrieval() {
     spdlog::info("initializing image retrieving");
     int result = MV_CC_StartGrabbing(this->handle_);
     if (result != MV_OK) {
@@ -231,7 +231,7 @@ void HikCamera::InitRetrieveImage() {
     spdlog::info("initialization succeed");
 }
 
-cv::Mat HikCamera::GetFrame() {
+cv::Mat HikCamera::get_frame() {
     std::memset(&this->buffer_, 0, sizeof(MV_FRAME_OUT));
     int n_ret = MV_CC_GetImageBuffer(
         this->handle_, &this->buffer_, 1000
@@ -242,7 +242,7 @@ cv::Mat HikCamera::GetFrame() {
     }
 
     spdlog::info("retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight);
-    auto img = ConvertRawToMat(&this->buffer_.stFrameInfo, &this->buffer_);
+    auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
     MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
     return img;
 }

@@ -56,26 +56,26 @@ struct CameraConfig {
 class HikCamera {
   private:
     /// \brief 枚举所有已连接的设备
-    void EnumDevices();
+    void enum_devices();
 
     /// \brief 输出所有设备的信息
-    void DebugDevices();
+    void debug_devices();
 
     /// \brief 打印设备信息
-    void PrintDeviceInfo(MV_CC_DEVICE_INFO *);
+    void print_device_info(MV_CC_DEVICE_INFO *);
 
     /// \brief 创建用于获取图像的句柄
-    void CreateHandle();
+    void create_handle();
 
     /// \brief 打开相机
-    void OpenCamera();
+    void open_camera();
 
     /// \brief 设置一系列参数配置
-    CameraConfig LoadConfig();
-    void Setup();
+    CameraConfig load_config();
+    void setup();
 
     /// \brief 初始化图像捕获
-    void InitRetrieveImage();
+    void initialize_image_retrieval();
 
     /// \brief 转换为 OpenCV 矩阵
 
@@ -91,11 +91,11 @@ class HikCamera {
     HikCamera();
     ~HikCamera();
     /// \brief 获取相机的处理 agent
-    void *GetHandle() { return handle_; }
+    void *get_handle() { return handle_; }
     /// \brief （辅助函数）将捕获的图像转换为 OpenCV 矩阵
-    static cv::Mat ConvertRawToMat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
+    static cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
     /// \brief 获取一帧图像 (`cv::Mat`)
-    cv::Mat GetFrame();
+    cv::Mat get_frame();
 };
 
 #endif // __CAM_CAPTURE_HPP__

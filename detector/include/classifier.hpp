@@ -1,7 +1,7 @@
 #ifndef __CLASSIFIER_HPP__
 #define __CLASSIFIER_HPP__
 
-#include "armor.hpp"
+#include "structs.hpp"
 
 #include <string>
 #include <vector>

@@ -1,4 +1,4 @@
-#include "armor.hpp"
+#include "structs.hpp"
 #include "config.hpp"
 #include "detector.hpp"
 #include <opencv2/opencv.hpp>

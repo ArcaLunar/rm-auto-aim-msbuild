@@ -1,4 +1,5 @@
-#include "armor.hpp"
+#include "structs.hpp"
+#include "config.hpp"
 
 #include <spdlog/spdlog.h>
 #include <toml++/toml.hpp>

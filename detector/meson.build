@@ -1,7 +1,6 @@
 detector_include = include_directories('./include')
 
 headers = files(
-    'include/armor.hpp',
     'include/detector.hpp',
     'include/classifier.hpp',
 )

@@ -1,7 +1,7 @@
 #ifndef __DETECTOR_HPP__
 #define __DETECTOR_HPP__
 
-#include "armor.hpp"
+#include "structs.hpp"
 
 #include <opencv2/core.hpp>
 #include <spdlog/spdlog.h>
