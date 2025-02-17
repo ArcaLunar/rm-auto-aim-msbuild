@@ -39,9 +39,8 @@ install_subdir(
 subdir('structs')
 subdir('config')
 
+subdir('transform')
 subdir('cam_capture')
-
-# subdir('include')
 subdir('detector')
 subdir('test')
 

@@ -102,19 +102,26 @@ void AutoAim::Classifier::classify(std::vector<Armor> &armors) {
     }
 
     // Filter armors that do not meet the requirements
-    armors.erase(std::remove_if(armors.begin(), armors.end(), [this](const Armor &armor) {
-        if (armor.confidence < threshold_) {
-            spdlog::info("droping: confidence too low, ignore armor with confidence: {:.2f}", armor.confidence);
-            return true;
-        }
+    armors.erase(
+        std::remove_if(
+            armors.begin(),
+            armors.end(),
+            [this](const Armor &armor) {
+                if (armor.confidence < threshold_) {
+                    spdlog::info("droping: confidence too low, ignore armor with confidence: {:.2f}", armor.confidence);
+                    return true;
+                }
 
-        for (const auto &ignore_class : ignore_) {
-            if (armor.result == ignore_class) {
-                spdlog::info("droping: ignore class, ignore armor with result: {}", armor.result);
-                return true;
+                for (const auto &ignore_class : ignore_) {
+                    if (armor.result == ignore_class) {
+                        spdlog::info("droping: ignore class, ignore armor with result: {}", armor.result);
+                        return true;
+                    }
+                }
+
+                return false;
             }
-        }
-
-        return false;
-    }));
+        ),
+        armors.end()
+    );
 }

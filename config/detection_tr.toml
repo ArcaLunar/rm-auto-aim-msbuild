@@ -16,13 +16,13 @@ max_large_center_distance = 5.5
 max_angle = 45.0
 
 [classifier]
-threshold = 0.6
+threshold = 0.6 # 置信度阈值. [0, 1]
 
 [mlp]
 threshold = 100
 ignore_class = []
 model_path = "./mlp.onnx"
-label_path = []
+labels = ["1", "2", "3", "4", "5", "outpost", "guard", "base", "negative"]
 
 # [light_bar]
 # min_area = 30.0
