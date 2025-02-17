@@ -12,12 +12,10 @@ namespace AutoAim {
 
 class Classifier {
   public:
-    Classifier(
-        const std::string &model_path, const std::string &label_path, const double &threshold,
-        const std::vector<std::string> &ignore = {}
-    );
+    Classifier(const std::string &config_path = "../config/detection_tr.toml");
 
     void classify(std::vector<Armor> &armors);
+    void extract_region_of_interest(const cv::Mat &img, const std::vector<Armor> &armors);
 
   private:
     cv::dnn::Net net_;

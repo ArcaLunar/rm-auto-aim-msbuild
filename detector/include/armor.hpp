@@ -58,8 +58,8 @@ struct Armor {
     //* 装甲板上的数字/图案
     cv::Mat number_img;               // 用于识别数字的装甲板图像
     double confidence;                // 识别的置信度
-    std::string classification_result; // 识别的结果
-    std::string number;               // 识别的数字
+    std::string summary; // 识别的结果
+    std::string result;               // 识别的数字
 
     Armor() = default;
     explicit Armor(const LightBar &l1, const LightBar &l2);

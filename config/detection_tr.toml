@@ -19,8 +19,10 @@ max_angle = 45.0
 threshold = 0.6
 
 [mlp]
+threshold = 100
+ignore_class = []
 model_path = "./mlp.onnx"
-label_path = "./label.txt"
+label_path = []
 
 # [light_bar]
 # min_area = 30.0

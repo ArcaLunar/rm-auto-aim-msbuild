@@ -3,11 +3,12 @@ detector_include = include_directories('./include')
 headers = files(
     'include/armor.hpp',
     'include/detector.hpp',
-    'include/id_classify.hpp',
+    'include/classifier.hpp',
 )
 sources = files(
     'src/armor.cpp',
     'src/detector.cpp',
+    'src/classifier.cpp',
 )
 
 detector_lib = shared_library(
