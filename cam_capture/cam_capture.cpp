@@ -60,9 +60,7 @@ void HikCamera::enum_devices() {
     // 枚举相机设备
     spdlog::info("retriving available cam list ...");
     std::memset(&this->devicelist_, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
-    int nResult = MV_CC_EnumDevices(
-        MV_GIGE_DEVICE | MV_USB_DEVICE, &this->devicelist_
-    );
+    int nResult = MV_CC_EnumDevices(MV_GIGE_DEVICE | MV_USB_DEVICE, &this->devicelist_);
     if (nResult != MV_OK) {
         spdlog::critical("retrieving fails.");
         exit(-1);
@@ -105,9 +103,7 @@ void HikCamera::print_device_info(MV_CC_DEVICE_INFO *pDeviceInfo) {
 
 void HikCamera::create_handle() {
     spdlog::info("creating handle_ for camera {}", this->camIndex);
-    int result = MV_CC_CreateHandle(
-        &this->handle_, devicelist_.pDeviceInfo[camIndex]
-    );
+    int result = MV_CC_CreateHandle(&this->handle_, devicelist_.pDeviceInfo[camIndex]);
     if (result != MV_OK) {
         spdlog::critical("critical creating handle_");
         exit(-1);
@@ -125,9 +121,7 @@ void HikCamera::open_camera() {
     spdlog::info("open succeed");
 }
 
-cv::Mat HikCamera::convert_raw_to_mat(
-    MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRAME_OUT *pstImage
-) {
+cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRAME_OUT *pstImage) {
     cv::Mat result;
     auto mark           = pstImageInfo->enPixelType;
     auto channel_type   = CV_8UC3;
@@ -144,12 +138,7 @@ cv::Mat HikCamera::convert_raw_to_mat(
         transform_type = cv::COLOR_BayerGB2RGB;
     } else spdlog::error("unsupported pixel format");
 
-    cv::Mat src(
-        pstImageInfo->nHeight,
-        pstImageInfo->nWidth,
-        channel_type,
-        pstImage->pBufAddr
-    );
+    cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, channel_type, pstImage->pBufAddr);
     if (transform_type == cv::COLOR_BGR2GRAY) result = src;
     else cv::cvtColor(src, result, transform_type);
 
@@ -173,9 +162,7 @@ CameraConfig HikCamera::load_config() {
         config.gain_auto        = T["gain_auto"].value_or(0);
         config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
         config.gamma            = T["gamma"].value_or(1.0);
-    } catch (const toml::parse_error &e) {
-        spdlog::error("error parsing config file: {}, using fallback", e.what());
-    }
+    } catch (const toml::parse_error &e) { spdlog::error("error parsing config file: {}, using fallback", e.what()); }
 
     return config;
 }
@@ -183,12 +170,10 @@ CameraConfig HikCamera::load_config() {
 void HikCamera::setup() {
     auto config = load_config();
 
-#define SET_PARAM(func, value, item)                              \
-    if (MV_CC_Set##func(this->handle_, item, value) != MV_OK) {   \
-        spdlog::critical("setting {} to {} failed", item, value); \
-        exit(-1);                                                 \
-    }                                                             \
-    spdlog::info("setting {} to {} succeeded.", item, value);
+#define SET_PARAM(func, value, item)                                                                                   \
+    if (MV_CC_Set##func(this->handle_, item, value) != MV_OK) {                                                        \
+        spdlog::critical("setting {} to {} failed", item, value);                                                      \
+    } else spdlog::info("setting {} to {} succeeded.", item, value);
 
     //* Pixel Format
     // if (config.pixel_format == "BayerRG8") {
@@ -233,15 +218,15 @@ void HikCamera::initialize_image_retrieval() {
 
 cv::Mat HikCamera::get_frame() {
     std::memset(&this->buffer_, 0, sizeof(MV_FRAME_OUT));
-    int n_ret = MV_CC_GetImageBuffer(
-        this->handle_, &this->buffer_, 1000
-    );
+    int n_ret = MV_CC_GetImageBuffer(this->handle_, &this->buffer_, 1000);
     if (n_ret != MV_OK) {
         spdlog::error("failed to get image buffer, no data");
         return cv::Mat();
     }
 
-    spdlog::info("retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight);
+    spdlog::info(
+        "retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight
+    );
     auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
     MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
     return img;

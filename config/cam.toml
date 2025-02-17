@@ -5,7 +5,7 @@ width = 1440
 height = 1080
 
 auto_exposure = 0
-exposure_time = 1000
+exposure_time = 5000
 
 adjustable_gamma = true
 gamma = 0.5
