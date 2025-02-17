@@ -1,13 +1,14 @@
 detector_include = include_directories('./include')
 
 headers = files(
-    'include/detector.hpp',
     'include/classifier.hpp',
+    'include/detector.hpp',
+    'include/publisher.hpp',
 )
 sources = files(
     'src/armor.cpp',
-    'src/detector.cpp',
     'src/classifier.cpp',
+    'src/detector.cpp',
 )
 
 detector_lib = shared_library(
@@ -20,6 +21,7 @@ detector_lib = shared_library(
         structs_dep,
         config_dep,
         all_dep,
+        pnp_solver_dep,
     ],
 )
 

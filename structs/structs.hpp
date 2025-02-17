@@ -74,7 +74,7 @@ struct LightBar : public cv::RotatedRect {
     explicit LightBar(const cv::RotatedRect &rect);
 
     /// 判断灯条是否合法
-    bool isValid(const LightBarConfig &config) const;
+    bool is_valid(const LightBarConfig &config) const;
 };
 
 /**
@@ -95,7 +95,7 @@ struct Armor {
     explicit Armor(const LightBar &l1, const LightBar &l2);
 
     // 判断装甲板是否合法
-    static bool isValid(const ArmorConfig &config, const LightBar &left, const LightBar &right);
+    static bool is_valid(const ArmorConfig &config, const LightBar &left, const LightBar &right);
 };
 
 } // namespace AutoAim

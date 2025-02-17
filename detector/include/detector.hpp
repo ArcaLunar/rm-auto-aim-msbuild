@@ -15,17 +15,18 @@ class Detector {
 
     /* ==== Functions ==== */
     // 按灰度阈值二值化图像
-    cv::Mat PreprocessImage(const cv::Mat &src);
+    cv::Mat preprocess_image(const cv::Mat &src);
 
     // 检测灯条
-    std::vector<LightBar> DetectLightBars(const cv::Mat &rgb, const cv::Mat &binary);
+    std::vector<LightBar> detect_lightbars(const cv::Mat &rgb, const cv::Mat &binary);
 
     // 将一组灯条匹配成装甲板
-    std::vector<Armor> MatchLightBars(const std::vector<LightBar> &lights);
+    std::vector<Armor> pair_lightbars(const std::vector<LightBar> &lights);
 
     // 检测两个匹配的灯条之间是否还有其他灯条
-    bool ContainAnotherLightBar(const LightBar &light1, const LightBar &light2, const std::vector<LightBar> &lights);
+    bool check_mispair(const LightBar &light1, const LightBar &light2, const std::vector<LightBar> &lights);
 
+    // （调试用）将检测结果绘制到图像上
     void draw_results_to_image(cv::Mat &img, const std::vector<Armor>& armors);
 
   public:

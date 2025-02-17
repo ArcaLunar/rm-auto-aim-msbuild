@@ -20,7 +20,7 @@ AutoAim::LightBar::LightBar(const cv::RotatedRect &rect) : cv::RotatedRect{rect}
     tilt_angle = tilt_angle * kRadianToDegree;
 }
 
-bool AutoAim::LightBar::isValid(const LightBarConfig &config) const {
+bool AutoAim::LightBar::is_valid(const LightBarConfig &config) const {
     double ratio        = length / width;
     const bool ratio_ok = config.min_ratio <= ratio && ratio <= config.max_ratio;
     const bool angle_ok = tilt_angle <= config.max_angle;
@@ -65,7 +65,7 @@ AutoAim::Armor::Armor(const LightBar &l1, const LightBar &l2) : left(l1), right(
     center = (left.center + right.center) / 2;
 }
 
-bool AutoAim::Armor::isValid(const ArmorConfig &config, const LightBar &left, const LightBar &right) {
+bool AutoAim::Armor::is_valid(const ArmorConfig &config, const LightBar &left, const LightBar &right) {
     double lightbar_length_ratio = std::min(left.length, right.length) / std::max(left.length, right.length);
     const bool is_lightbar_length_ok   = lightbar_length_ratio > config.min_light_ratio;
 

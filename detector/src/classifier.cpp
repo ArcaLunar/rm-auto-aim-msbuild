@@ -21,12 +21,14 @@ void AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const s
         const int bottom_light_y = top_light_y + light_length;
         const int warp_width     = 32;
 
-        cv::Point2f dst_points[]
-            = {cv::Point2f(0, bottom_light_y),
-               cv::Point2f(0, top_light_y),
-               cv::Point2f(warp_width - 1, top_light_y),
-               cv::Point2f(warp_width - 1, bottom_light_y)};
+        cv::Point2f dst_points[] = {
+            cv::Point2f(0, bottom_light_y),
+            cv::Point2f(0, top_light_y),
+            cv::Point2f(warp_width - 1, top_light_y),
+            cv::Point2f(warp_width - 1, bottom_light_y),
+        };
 
+        // 将原图透视变换，保存到 number_img
         cv::Mat number_img;
         auto rotation_matrix = cv::getPerspectiveTransform(src_points, dst_points);
         cv::warpPerspective(img, number_img, rotation_matrix, cv::Size(warp_width, warp_height));

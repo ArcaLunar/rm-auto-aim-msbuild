@@ -38,10 +38,11 @@ install_subdir(
 ### Structs
 subdir('structs')
 subdir('config')
-
-subdir('transform')
+subdir('thpool')
 subdir('cam_capture')
-subdir('detector')
-subdir('test')
+subdir('transform')
 
+subdir('detector')
+
+subdir('test')
 subdir('app')

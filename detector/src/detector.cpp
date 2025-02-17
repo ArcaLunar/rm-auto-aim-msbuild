@@ -8,7 +8,7 @@ AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_c
     spdlog::info("Detector initialized with config file: \"{}\"", path);
 }
 
-cv::Mat AutoAim::Detector::PreprocessImage(const cv::Mat &src) {
+cv::Mat AutoAim::Detector::preprocess_image(const cv::Mat &src) {
     cv::Mat gray;
     cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
 
@@ -18,7 +18,7 @@ cv::Mat AutoAim::Detector::PreprocessImage(const cv::Mat &src) {
     return binary;
 }
 
-std::vector<AutoAim::LightBar> AutoAim::Detector::DetectLightBars(const cv::Mat &rgb, const cv::Mat &binary) {
+std::vector<AutoAim::LightBar> AutoAim::Detector::detect_lightbars(const cv::Mat &rgb, const cv::Mat &binary) {
     // 用 contour 轮廓找出灯条
     std::vector<std::vector<cv::Point2f>> contours;
     std::vector<cv::Vec4i> hierarchy;
@@ -31,7 +31,7 @@ std::vector<AutoAim::LightBar> AutoAim::Detector::DetectLightBars(const cv::Mat 
         auto r_rect = cv::minAreaRect(contour);
         auto light  = LightBar(r_rect);
 
-        if (light.isValid(this->light_bar_config_)) {
+        if (light.is_valid(this->light_bar_config_)) {
             auto rect = light.boundingRect();
             // 过滤不可能的灯条
             if (rect.x < 0 || rect.y < 0 || rect.x + rect.width > rgb.cols || rect.y + rect.height > rgb.rows
@@ -64,22 +64,24 @@ std::vector<AutoAim::LightBar> AutoAim::Detector::DetectLightBars(const cv::Mat 
     return lights;
 }
 
-std::vector<AutoAim::Armor> AutoAim::Detector::MatchLightBars(const std::vector<AutoAim::LightBar> &lights) {
+std::vector<AutoAim::Armor> AutoAim::Detector::pair_lightbars(const std::vector<AutoAim::LightBar> &lights) {
     std::vector<AutoAim::Armor> armors;
 
     // 两两枚举进行匹配
     for (auto light1 = lights.begin(); light1 != lights.end(); light1++) {
         for (auto light2 = light1 + 1; light2 != lights.end(); light2++) {
+            // 过滤己方颜色灯条
             if (light1->color != COLOR_TO_DETECT || light2->color != COLOR_TO_DETECT) continue;
-
-            if (this->ContainAnotherLightBar(*light1, *light2, lights)) continue;
-            if (Armor::isValid(this->armor_config_, *light1, *light2)) armors.emplace_back(*light1, *light2);
+            // 检查灯条中间是否还夹着其他灯条，是的话不可能组成装甲板
+            if (this->check_mispair(*light1, *light2, lights)) continue;
+            // 检查组成的装甲板是否合法
+            if (Armor::is_valid(this->armor_config_, *light1, *light2)) armors.emplace_back(*light1, *light2);
         }
     }
     return armors;
 }
 
-bool AutoAim::Detector::ContainAnotherLightBar(
+bool AutoAim::Detector::check_mispair(
     const AutoAim::LightBar &light1, const AutoAim::LightBar &light2, const std::vector<AutoAim::LightBar> &lights
 ) {
     auto points = std::vector<cv::Point2f>{light1.top, light1.bottom, light2.top, light2.bottom};
