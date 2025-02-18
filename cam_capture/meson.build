@@ -6,7 +6,7 @@ cam_capture = shared_library(
         config_dep,
     ],
     install: true,
-    install_dir: join_paths(get_option('prefix'), 'bin'),
+    # install_dir: join_paths(get_option('prefix'), 'bin'),
 )
 
 cam_capture_dep = declare_dependency(

@@ -155,13 +155,13 @@ CameraConfig HikCamera::load_config() {
         T = toml::parse_file("../config/cam.toml");
 
         config.pixel_format     = T["pixel_format"].value_or("BayerRG8");
-        config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
+        // config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
         config.trigger_mode     = T["trigger_mode"].value_or(0);
         config.auto_exposure    = T["auto_exposure"].value_or(0);
         config.exposure_time    = T["exposure_time"].value_or(1000);
         config.gain_auto        = T["gain_auto"].value_or(0);
         config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
-        config.gamma            = T["gamma"].value_or(1.0);
+        config.gamma            = T["gamma"].value_or(0.5);
     } catch (const toml::parse_error &e) { spdlog::error("error parsing config file: {}, using fallback", e.what()); }
 
     return config;
@@ -191,7 +191,7 @@ void HikCamera::setup() {
     //* PayLoad
     // SET_PARAM(IntValue, config.payload_size, "PayloadSize");
     //* Depth
-    SET_PARAM(EnumValue, config.adc_bit_depth, "ADCBitDepth");
+    // SET_PARAM(EnumValue, config.adc_bit_depth, "ADCBitDepth");
     //* 设置曝光
     SET_PARAM(EnumValue, config.auto_exposure, "ExposureAuto");
     SET_PARAM(FloatValue, config.exposure_time, "ExposureTime");
@@ -200,7 +200,7 @@ void HikCamera::setup() {
     //* Set Gamma
     if (config.adjustable_gamma) {
         SET_PARAM(EnumValue, 1, "GammaSelector");
-        SET_PARAM(FloatValue, config.gamma, "Gamma");
+        // SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
 
 #undef SET_PARAM

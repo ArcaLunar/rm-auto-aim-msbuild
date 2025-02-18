@@ -36,7 +36,7 @@ struct CameraConfig {
     int adc_bit_depth{8};
 
     bool adjustable_gamma{true};
-    double gamma{1.0};
+    double gamma{0.5};
 
     int gain_auto{0};
 

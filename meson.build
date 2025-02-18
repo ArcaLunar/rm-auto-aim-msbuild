@@ -5,7 +5,7 @@ project(
     default_options: [
         'cpp_std=c++20',
         'prefix=/home/arca/Documents/codebases/pred_v2/output',
-        'optimization=3',
+        'optimization=2',
     ],
 )
 
@@ -30,10 +30,10 @@ all_dep = [
 binary_dir = './output'
 
 # INSTALL Configs
-install_subdir(
-    'config',
-    install_dir: get_option('prefix'),
-)
+# install_subdir(
+#     'config',
+#     install_dir: get_option('prefix'),
+# )
 
 ### Structs
 subdir('structs')
