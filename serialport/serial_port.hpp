@@ -3,14 +3,18 @@
 
 #include "circular_buffer.hpp"
 #include "structs.hpp"
+#include <array>
 #include <boost/asio.hpp>
 #include <chrono>
 
-constexpr size_t kSendBufSize = sizeof(VisionPLCSendMsg);
-constexpr size_t kRecvMsgSize = sizeof(VisionPLCRecvMsg);
-constexpr size_t kRecvBufSize = kRecvMsgSize * 10;
+constexpr size_t kSendBufSize  = sizeof(VisionPLCSendMsg);
+constexpr size_t kRecvMsgSize  = sizeof(VisionPLCRecvMsg);
+constexpr size_t kRecvMsgCount = 20; // buffer of 10 messages
+constexpr long long kTimeout   = 1000;
 
 class SerialPort {
+    using RecvMsgBuffer = std::array<uint8_t, kRecvMsgSize>; // each byte = 1 index
+
   public:
     /**
      * @brief Construct a new SerialPort object, and read the configuration from the specified path.
@@ -73,10 +77,18 @@ class SerialPort {
     uint8_t updated_;                                 // 更新位，用于判断是否是新数据
     std::chrono::steady_clock::time_point last_recv_; // 上次更新时间
 
-    uint8_t send_frame_buffer_[kSendBufSize]; // 发送缓冲区
+    uint8_t send_frame_buffer_[kSendBufSize]; // 发送缓冲区，每个 byte 一个 index
+    CircularBuffer<RecvMsgBuffer> recv_buffer_;
+    CircularBuffer<VisionPLCRecvMsg> data_recv_buffer_;
 
   private:
     void __set_options();
+
+    /**
+     * @brief 检查 frame[begin, end-1] 是否符合 MsgProtocol 协议
+     */
+    template <typename MsgProtocol>
+    bool __verify_frame(const RecvMsgBuffer &frame, size_t begin, size_t end);
 };
 
 #endif // __SERIAL_PORT_HPP__

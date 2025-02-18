@@ -14,9 +14,13 @@
 // ========================================================
 // Serial Port Data Structures
 // ========================================================
+constexpr int kProtocolSendHead = 0xA3;
+constexpr int kProtocolRecvHead = 0x3A;
+constexpr int kProtocolTail     = 0xAA;
+
 #pragma pack(push, 1)
 struct VisionPLCSendMsg {
-    uint8_t frame_head{0xA3};
+    uint8_t frame_head{kProtocolSendHead};
     float pitch{};
     float yaw{};
     uint8_t flag_found{};
@@ -24,13 +28,13 @@ struct VisionPLCSendMsg {
     uint8_t flag_done_fitting{};
     uint8_t flag_patrolling{};
     uint8_t flag_have_updated{};
-    uint8_t frame_tail{0xAA};
+    uint8_t frame_tail{kProtocolTail};
 };
 #pragma pack(pop)
 
 #pragma pack(push, 1)
 struct VisionPLCRecvMsg {
-    uint8_t frame_head{0x3A};
+    uint8_t frame_head{kProtocolRecvHead};
     float imu_roll{};
     float imu_pitch{};
     float imu_yaw{};
@@ -46,7 +50,7 @@ struct VisionPLCRecvMsg {
         uint8_t outpost : 1;
         uint8_t base : 1;
     } shoot_decision{};
-    uint8_t frame_tail{0xAA};
+    uint8_t frame_tail{kProtocolTail};
 };
 #pragma pack(pop)
 

@@ -1,5 +1,7 @@
 #include "serial_port.hpp"
+#include "structs.hpp"
 
+#include <boost/asio/basic_datagram_socket.hpp>
 #include <chrono>
 #include <cstring>
 #include <exception>
@@ -7,7 +9,12 @@
 #include <spdlog/spdlog.h>
 #include <toml++/toml.hpp>
 
-SerialPort::SerialPort(const std::string &config_path) : port_index_{0}, updated_{0}, port_ok{false} {
+SerialPort::SerialPort(const std::string &config_path)
+    : port_index_{0},
+      port_ok{false},
+      updated_{0},
+      last_recv_(std::chrono::steady_clock::now()),
+      recv_buffer_(kRecvMsgCount) {
     try {
         spdlog::info("serial_port: reading config from {}", config_path);
         toml::table T = toml::parse_file(config_path);
@@ -81,4 +88,58 @@ bool SerialPort::send_data(const VisionPLCSendMsg &msg) {
         spdlog::error("serial_port.send_data() error: {}", err.what());
         return false;
     }
+}
+
+void SerialPort::read_raw_data_from_port() {
+    SerialPort::RecvMsgBuffer data;
+    try {
+        while (true) {
+            data.fill(0);
+            if (!this->port_ok) continue;
+
+            auto size_of_data_read = boost::asio::read(*this->port_, boost::asio::buffer(data.data(), data.size()));
+            if (size_of_data_read == kRecvMsgSize) this->recv_buffer_.push(data);
+            else spdlog::warn("serial_port.read_raw_data_from_port() warning: read size mismatch, ignoring");
+        }
+    } catch (const std::exception &err) {
+        spdlog::error("serial_port.read_raw_data_from_port() error: {}", err.what());
+        exit(-1);
+    }
+}
+
+void SerialPort::process_raw_data_from_buffer() {
+    VisionPLCRecvMsg data;
+    SerialPort::RecvMsgBuffer buffer;
+    buffer.fill(0);
+
+    while (true) {
+        auto data_opt = this->recv_buffer_.pop();
+        if (!data_opt.has_value()) continue; // wait for data
+
+        for (size_t i = 0, n = buffer.size(); i < n;) { // Process raw data to msg data structure
+            size_t j = i + kRecvMsgSize;
+            if (j > n) break; // range: [i, j)
+
+            //* frame verification
+            if (!this->__verify_frame<VisionPLCRecvMsg>(buffer, i, j)) {
+                // invalid frame, skip
+                ++i;
+                continue;
+            }
+            // valid frame, copy to data recv buffer
+            std::memcpy(&data, buffer.data() + i, kRecvMsgSize);
+            data_recv_buffer_.push(data);
+            i = j;
+        }
+    }
+}
+
+template <typename MsgProtocol>
+bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t begin, size_t end) {
+    if (end - begin != sizeof(MsgProtocol)) return false;                // 下标标记的 buffer 大小不对
+    else if (buffer.size() < sizeof(MsgProtocol)) return false;          // buffer 太小
+    else if (begin < 0 || end < 0) return false;                         // 下标为负数
+    else if (end > buffer.size() || begin > buffer.size()) return false; // 下标超出范围
+    else if (buffer[begin] != kProtocolRecvHead || buffer[end - 1] != kProtocolTail) return false; // 首尾不对
+    else return true;
 }
