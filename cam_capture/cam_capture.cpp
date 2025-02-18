@@ -200,7 +200,7 @@ void HikCamera::setup() {
     //* Set Gamma
     if (config.adjustable_gamma) {
         SET_PARAM(EnumValue, 1, "GammaSelector");
-        // SET_PARAM(FloatValue, config.gamma, "Gamma");
+        SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
 
 #undef SET_PARAM
