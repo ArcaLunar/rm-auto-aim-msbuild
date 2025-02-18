@@ -1,4 +1,4 @@
-cam_capture = shared_library(
+cam_capture = static_library(
     'cam_capture',
     'cam_capture.cpp',
     dependencies: [

@@ -1,4 +1,4 @@
-pnp_solver_lib = shared_library(
+pnp_solver_lib = static_library(
     'pnp_solver',
     'pnp_solver.cpp',
     include_directories: include_directories('.'),

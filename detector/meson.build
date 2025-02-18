@@ -11,7 +11,7 @@ sources = files(
     'src/detector.cpp',
 )
 
-detector_lib = shared_library(
+detector_lib = static_library(
     'detector',
     headers + sources,
     include_directories: [

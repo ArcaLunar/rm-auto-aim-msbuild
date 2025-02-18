@@ -16,48 +16,46 @@
 // ========================================================
 #pragma pack(push, 1)
 struct VisionPLCSendMsg {
-    std::byte frame_head{0xA3};
+    uint8_t frame_head{0xA3};
     float pitch{};
     float yaw{};
-    std::byte flag_found{};
-    std::byte flag_fire{};
-    std::byte flag_done_fitting{};
-    std::byte flag_patrolling{};
-    std::byte flag_have_updated{};
-    std::byte frame_tail{0xAA};
+    uint8_t flag_found{};
+    uint8_t flag_fire{};
+    uint8_t flag_done_fitting{};
+    uint8_t flag_patrolling{};
+    uint8_t flag_have_updated{};
+    uint8_t frame_tail{0xAA};
 };
 #pragma pack(pop)
 
 #pragma pack(push, 1)
 struct VisionPLCRecvMsg {
-    std::byte frame_head{0x3A};
+    uint8_t frame_head{0x3A};
     float imu_roll{};
     float imu_pitch{};
     float imu_yaw{};
-    std::byte my_color{}; // 1 for red, 2 for blue
-    std::byte aim_mode;
+    uint8_t my_color{}; // 1 for red, 2 for blue
+    uint8_t aim_mode;
     struct {
-        std::byte hero : 1;
-        std::byte engineer : 1;
-        std::byte infantry_3 : 1;
-        std::byte infantry_4 : 1;
-        std::byte infantry_5 : 1;
-        std::byte sentry : 1;
-        std::byte outpost : 1;
-        std::byte base : 1;
+        uint8_t hero : 1;
+        uint8_t engineer : 1;
+        uint8_t infantry_3 : 1;
+        uint8_t infantry_4 : 1;
+        uint8_t infantry_5 : 1;
+        uint8_t sentry : 1;
+        uint8_t outpost : 1;
+        uint8_t base : 1;
     } shoot_decision{};
-    std::byte frame_tail{0xAA};
+    uint8_t frame_tail{0xAA};
 };
 #pragma pack(pop)
 
 struct SerialPortConfiguration {
     std::string port_name;
-    size_t port_index;
-    std::vector<std::string> alternative_ports;
     int baud_rate{460800};
     int data_bits{8};
     int stop_bits{1};
-    int parity;
+    int parity{0};
     int sync{1};
     int send_interval{0};
 };
