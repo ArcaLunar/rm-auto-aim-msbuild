@@ -40,6 +40,7 @@ subdir('structs')
 subdir('config')
 subdir('thpool')
 subdir('cam_capture')
+subdir('serialport')
 subdir('transform')
 
 subdir('detector')
