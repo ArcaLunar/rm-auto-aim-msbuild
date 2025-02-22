@@ -7,6 +7,8 @@
 #include <exception>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <sstream>
+#include <thread>
 #include <toml++/toml.hpp>
 
 SerialPort::SerialPort(const std::string &config_path)
@@ -20,11 +22,14 @@ SerialPort::SerialPort(const std::string &config_path)
         toml::table T = toml::parse_file(config_path);
 
         [&]() { // retrieve candidate port names
+            std::stringstream ss;
             auto alt_ports = T["alternative_ports"];
             if (const auto *arr = alt_ports.as_array()) {
                 for (const auto &port : *arr) this->alt_ports_.push_back(port.as_string()->get());
+                for (auto &port : this->alt_ports_) ss << port << " ";
             }
             cfg_.port_name = alt_ports_[0];
+            spdlog::info("serial_port: alternative ports = {}", ss.str());
         }();
     } catch (std::exception &err) {
         spdlog::error("serial_port: error reading config: {}, using fallback", err.what());
@@ -38,10 +43,7 @@ void SerialPort::initialize_port() {
         this->__set_options();
         this->port_ok = true;
         spdlog::info("port options set successfully");
-    } catch (std::exception &err) {
-        spdlog::error("port init error: {}", err.what());
-        exit(-1);
-    }
+    } catch (std::exception &err) { spdlog::error("port init error: {}", err.what()); }
 }
 
 void SerialPort::close_port() {
@@ -130,6 +132,7 @@ void SerialPort::process_raw_data_from_buffer() {
             std::memcpy(&data, buffer.data() + i, kRecvMsgSize);
             data_recv_buffer_.push(data);
             i = j;
+            spdlog::info("data processed from bits to float");
         }
     }
 }
@@ -142,4 +145,40 @@ bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t 
     else if (end > buffer.size() || begin > buffer.size()) return false; // 下标超出范围
     else if (buffer[begin] != kProtocolRecvHead || buffer[end - 1] != kProtocolTail) return false; // 首尾不对
     else return true;
+}
+
+void SerialPort::check_port_and_auto_reconnect() {
+    using namespace std::chrono;
+    auto last_check = high_resolution_clock::now();
+
+    while (true) {
+        if (last_recv_ == steady_clock::time_point()) continue;
+
+        auto now      = steady_clock::now();
+        auto duration = duration_cast<milliseconds>(now - last_recv_);
+
+        if (duration.count() < kTimeout) continue; // 未超时
+        spdlog::error("serial_port error: port timeout, reconnecting");
+
+        while (true) {
+            // test at 1Hz
+            while (1000 > duration_cast<milliseconds>(high_resolution_clock::now() - last_check).count())
+                std::this_thread::yield();
+
+            last_check = high_resolution_clock::now();
+
+            std::string next_port = alt_ports_[port_index_];               // 先重试当前端口
+            port_index_           = (port_index_ + 1) % alt_ports_.size(); // 选择下一个端口
+            port_ok               = false;                                 // 重置端口状态
+            close_port();
+            cfg_.port_name = next_port;
+
+            try {
+                initialize_port();
+                if (!port_ok) throw std::runtime_error(cfg_.port_name + " port not ok");
+                spdlog::info("port reconnected successfully");
+                break;
+            } catch (const std::exception &err) { spdlog::error("port reconnect error: {}", err.what()); }
+        }
+    }
 }

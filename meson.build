@@ -38,7 +38,7 @@ binary_dir = './output'
 ### Structs
 subdir('structs')
 subdir('config')
-subdir('thpool')
+subdir('work_queue')
 subdir('cam_capture')
 subdir('serialport')
 subdir('transform')
