@@ -6,6 +6,7 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <chrono>
+#include <optional>
 
 constexpr size_t kSendBufSize  = sizeof(VisionPLCSendMsg);
 constexpr size_t kRecvMsgSize  = sizeof(VisionPLCRecvMsg);
@@ -64,6 +65,11 @@ class SerialPort {
      * @remark make it `thread`
      */
     void check_port_and_auto_reconnect();
+
+    /**
+     * @brief 获取消息缓存里第一个数据
+     */
+    std::optional<VisionPLCRecvMsg> get_data();
 
   protected:
     boost::asio::io_service io_service_;             // io_service

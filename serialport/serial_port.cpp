@@ -182,3 +182,5 @@ void SerialPort::check_port_and_auto_reconnect() {
         }
     }
 }
+
+std::optional<VisionPLCRecvMsg> SerialPort::get_data() { return data_recv_buffer_.pop(); }
