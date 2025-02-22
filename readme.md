@@ -16,3 +16,18 @@ $$
 (0,w/2,-h/2)\\
 (0,-w/2,- h/2)\\
 $$
+
+## `detector.publisher`
+
+订阅 `detector` 发送的（二维）装甲板信息，通过 `transform` 模块转化为三维装甲板，然后发送出去。
+
+## `policy`
+
+通过 `work_queue` 订阅 `detector.publisher` 发送的（三维、已标注）装甲板信息
+
+1. 直接将甲板转发到各自的 `tracker`
+2. 筛选要击打的甲板，释放对应的 `mutex`（允许攻击）
+
+## `tracker`
+
+通过 `work_queue` 订阅 `policy` 发送的装甲板信息，对车进行建模

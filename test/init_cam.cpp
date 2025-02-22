@@ -11,7 +11,7 @@ int main() {
     HikCamera camera;
     while (true) {
         auto start = cv::getTickCount();
-        cv::Mat frame = camera.get_frame();
+        cv::Mat frame = camera.get_frame().frame;
         auto end = cv::getTickCount();
 
         spdlog::info("fps: {}", cv::getTickFrequency() / (end - start));

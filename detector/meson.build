@@ -3,7 +3,7 @@ detector_include = include_directories('./include')
 headers = files(
     'include/classifier.hpp',
     'include/detector.hpp',
-    'include/publisher.hpp',
+    # 'include/publisher.hpp',
 )
 sources = files(
     'src/armor.cpp',

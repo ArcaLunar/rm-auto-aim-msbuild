@@ -5,9 +5,12 @@ project(
     default_options: [
         'cpp_std=c++20',
         'prefix=/home/arca/Documents/codebases/pred_v2/output',
-        'optimization=2',
+        'cpp_args=-w',
     ],
 )
+
+##
+headers = include_directories('./structs')
 
 ### Dependency declaration
 spdlog = dependency('spdlog')
@@ -38,7 +41,7 @@ binary_dir = './output'
 ### Structs
 subdir('structs')
 subdir('config')
-subdir('work_queue')
+# subdir('work_queue')
 subdir('cam_capture')
 subdir('serialport')
 subdir('transform')

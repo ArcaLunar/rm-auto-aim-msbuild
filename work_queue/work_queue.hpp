@@ -1,10 +1,11 @@
 #ifndef __THPOOL_HPP__
 #define __THPOOL_HPP__
 
+#include "circular_buffer.hpp"
+
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-#include <queue>
 #include <thread>
 
 template <typename WorkType>
@@ -17,7 +18,9 @@ class WorkQueue {
     // 启动工作队列
     void start() {
         for (int i = 0; i < this->producer_count_; i++) {
-            std::thread([&]() {});
+            std::thread([&]() {
+                while (true) { std::unique_lock<std::mutex> lock(this->wq_mtx_); }
+            });
         }
     }
 
