@@ -2,6 +2,7 @@
 #define __DETECTOR_HPP__
 
 #include "structs.hpp"
+#include "classifier.hpp"
 
 #include <opencv2/core.hpp>
 #include <spdlog/spdlog.h>
@@ -12,8 +13,10 @@ namespace AutoAim {
 class Detector {
     LightBarConfig light_bar_config_;
     ArmorConfig armor_config_;
+    Classifier classifier_;
 
     /* ==== Functions ==== */
+
     // 按灰度阈值二值化图像
     cv::Mat preprocess_image(const cv::Mat &src);
 
@@ -27,11 +30,14 @@ class Detector {
     bool check_mispair(const LightBar &light1, const LightBar &light2, const std::vector<LightBar> &lights);
 
     // （调试用）将检测结果绘制到图像上
-    void draw_results_to_image(cv::Mat &img, const std::vector<Armor>& armors);
+    void draw_results_to_image(cv::Mat &img, const std::vector<Armor> &armors);
 
   public:
     // 载入配置文件
     Detector(std::string path = "../config/detection_tr.toml");
+
+    // 检测装甲板
+    std::vector<Armor> detect(const cv::Mat &img);
 };
 
 } // namespace AutoAim

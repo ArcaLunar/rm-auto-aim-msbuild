@@ -1,11 +1,25 @@
-#include "structs.hpp"
+#include "classifier.hpp"
 #include "config.hpp"
 #include "detector.hpp"
+#include "structs.hpp"
 #include <opencv2/opencv.hpp>
 
 //! Detector
-AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_config_(path) {
+AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_config_(path), classifier_(path) {
     spdlog::info("Detector initialized with config file: \"{}\"", path);
+}
+
+std::vector<AutoAim::Armor> AutoAim::Detector::detect(const cv::Mat &img) {
+    auto binary = this->preprocess_image(img);
+    auto lights = this->detect_lightbars(img, binary);
+    auto armors = this->pair_lightbars(lights);
+
+    if (!armors.empty()) {
+        this->classifier_.extract_region_of_interest(img, armors);
+        this->classifier_.classify(armors);
+    }
+
+    return armors;
 }
 
 cv::Mat AutoAim::Detector::preprocess_image(const cv::Mat &src) {
@@ -100,7 +114,7 @@ void AutoAim::Detector::draw_results_to_image(cv::Mat &img, const std::vector<Ar
     if constexpr (!SHOW_ANNOTATED_IMAGE) return;
 
     // draw armors
-    for(const auto &armor: armors) {
+    for (const auto &armor : armors) {
         cv::line(img, armor.left.top, armor.right.bottom, cv::Scalar(0, 255, 0), 2);
         cv::line(img, armor.left.bottom, armor.right.top, cv::Scalar(0, 255, 0), 2);
     }
