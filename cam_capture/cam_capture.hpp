@@ -2,6 +2,8 @@
 #define __CAM_CAPTURE_HPP__
 
 #include "CameraParams.h"
+#include "structs.hpp"
+
 #include <opencv2/core/core.hpp>
 
 enum HikCameraProperties {
@@ -77,8 +79,8 @@ class HikCamera {
     /// \brief 初始化图像捕获
     void initialize_image_retrieval();
 
-    /// \brief 转换为 OpenCV 矩阵
-
+    /// \brief 获取一帧图像 (`cv::Mat`)
+    cv::Mat __get_frame();
   protected:
     /// \brief 设备列表
     MV_CC_DEVICE_INFO_LIST devicelist_;
@@ -94,8 +96,11 @@ class HikCamera {
     void *get_handle() { return handle_; }
     /// \brief （辅助函数）将捕获的图像转换为 OpenCV 矩阵
     static cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
-    /// \brief 获取一帧图像 (`cv::Mat`)
-    cv::Mat get_frame();
+
+    /**
+     * @brief 获取一帧图像，打上时间戳
+     */
+    RawFrameInfo get_frame();
 };
 
 #endif // __CAM_CAPTURE_HPP__

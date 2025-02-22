@@ -1,6 +1,7 @@
 #include "cam_capture.hpp"
 
 #include "MvCameraControl.h"
+#include "structs.hpp"
 #include "toml++/impl/parse_error.hpp"
 #include "toml++/impl/parser.hpp"
 
@@ -154,7 +155,7 @@ CameraConfig HikCamera::load_config() {
     try {
         T = toml::parse_file("../config/cam.toml");
 
-        config.pixel_format     = T["pixel_format"].value_or("BayerRG8");
+        config.pixel_format = T["pixel_format"].value_or("BayerRG8");
         // config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
         config.trigger_mode     = T["trigger_mode"].value_or(0);
         config.auto_exposure    = T["auto_exposure"].value_or(0);
@@ -216,7 +217,7 @@ void HikCamera::initialize_image_retrieval() {
     spdlog::info("initialization succeed");
 }
 
-cv::Mat HikCamera::get_frame() {
+cv::Mat HikCamera::__get_frame() {
     std::memset(&this->buffer_, 0, sizeof(MV_FRAME_OUT));
     int n_ret = MV_CC_GetImageBuffer(this->handle_, &this->buffer_, 1000);
     if (n_ret != MV_OK) {
@@ -230,4 +231,11 @@ cv::Mat HikCamera::get_frame() {
     auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
     MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
     return img;
+}
+
+RawFrameInfo HikCamera::get_frame() {
+    RawFrameInfo result;
+    result.frame     = this->__get_frame();
+    result.timestamp = std::chrono::system_clock::now();
+    return result;
 }

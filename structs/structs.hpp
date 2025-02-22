@@ -152,3 +152,14 @@ struct Armor {
 };
 
 } // namespace AutoAim
+
+/**
+ * @brief 经过识别、坐标变换后的装甲板信息
+ *
+ */
+struct AnnotatedArmorInfo {
+    std::vector<cv::Point3f> corners;
+    std::string result;
+    IMUInfo imu_info;
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
+};
