@@ -15,9 +15,10 @@ std::vector<AutoAim::Armor> AutoAim::Detector::detect(const cv::Mat &img) {
     auto armors = this->pair_lightbars(lights);
 
     if (!armors.empty()) {
+        spdlog::info("detected {} armors", armors.size());
         this->classifier_.extract_region_of_interest(img, armors);
         this->classifier_.classify(armors);
-    }
+    } else spdlog::info("no armors detected");
 
     return armors;
 }
