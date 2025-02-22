@@ -5,7 +5,6 @@
 
 #include <atomic>
 #include <functional>
-#include <memory>
 #include <pthread.h>
 #include <semaphore.h>
 #include <spdlog/spdlog.h>
@@ -16,16 +15,25 @@ class WorkQueue {
   public:
     WorkQueue() : producer_count_(0), consumer_count_(0) {}
 
+    /**
+     * @brief 设置生产者行为和数量
+     */
     void set_producer(std::function<WorkType()> producer, int count) {
         producer_       = producer;
         producer_count_ = count;
     }
 
+    /**
+     * @brief 设置消费者行为和数量
+     */
     void set_consumer(std::function<void(WorkType)> consumer, int count) {
         consumer_       = consumer;
         consumer_count_ = count;
     }
 
+    /**
+     * @brief 启动工作队列
+     */
     void start() {
         // Set up the producer threads
         for (int i = 0; i < producer_count_; ++i) {
@@ -60,6 +68,9 @@ class WorkQueue {
         }
     }
 
+    /**
+     * @brief 停止工作队列
+     */
     void stop() {
         stop_ = true;
         for (auto &t : producer_threads_) not_empty_.release();
@@ -69,7 +80,7 @@ class WorkQueue {
     }
 
   protected:
-    CircularBuffer<WorkType> buffer_{MAX_SIZE};                   //  待处理的任务队列
+    CircularBuffer<WorkType> buffer_{MAX_SIZE};                   // 待处理的任务队列
     std::counting_semaphore<> not_empty_{0}, not_full_{MAX_SIZE}; // 信号量，用于控制队列是否为空或者是否已满
     std::atomic<bool> stop_{false};
 

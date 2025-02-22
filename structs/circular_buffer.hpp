@@ -33,14 +33,14 @@ class CircularBuffer {
     void push(const T &item) {
         std::lock_guard<std::mutex> lock(mutex_);
         buffer_[head_] = item;
-        if (full_) tail_ = (tail_ + 1) % max_size_;
+        if (is_full()) tail_ = (tail_ + 1) % max_size_;
         head_ = (head_ + 1) % max_size_;
         full_ = head_ == tail_;
     }
 
     std::optional<T> pop() {
-        if (is_empty()) return std::nullopt;
         std::lock_guard<std::mutex> lock(mutex_);
+        if (is_empty()) return std::nullopt;
         T result = buffer_[tail_];
         full_    = false;
         tail_    = (tail_ + 1) % max_size_;
@@ -55,13 +55,11 @@ class CircularBuffer {
 
     // return true if the buffer is empty
     bool is_empty() {
-        std::lock_guard<std::mutex> lock(mutex_);
         return (!full_ && (head_ == tail_));
     }
 
     // return true if the buffer is full
     bool is_full() {
-        std::lock_guard<std::mutex> lock(mutex_);
         return full_;
     }
 
@@ -69,7 +67,7 @@ class CircularBuffer {
     size_t size() {
         std::lock_guard<std::mutex> lock(mutex_);
         size_t size = max_size_;
-        if (!full_) {
+        if (!is_full()) {
             if (head_ >= tail_) size = head_ - tail_;
             else size = max_size_ + head_ - tail_;
         }

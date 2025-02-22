@@ -4,7 +4,7 @@
 
 int main() {
     WorkQueue<int, 1024> wq;
-    int goods = 0;
+    volatile std::atomic<int> goods = 0;
     wq.set_producer(
         [&]() {
             spdlog::info("producing: {}", goods);
