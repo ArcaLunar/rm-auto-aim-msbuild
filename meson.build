@@ -10,7 +10,7 @@ project(
 )
 
 ##
-headers = include_directories('./structs')
+headers = [include_directories('./structs')]
 
 ### Dependency declaration
 spdlog = dependency('spdlog')
@@ -41,7 +41,7 @@ binary_dir = './output'
 ### Structs
 subdir('structs')
 subdir('config')
-# subdir('work_queue')
+subdir('work_queue')
 subdir('cam_capture')
 subdir('serialport')
 subdir('transform')

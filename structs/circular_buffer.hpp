@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <atomic>
 
 template <typename T>
 class CircularBuffer {
@@ -38,9 +39,8 @@ class CircularBuffer {
     }
 
     std::optional<T> pop() {
-        std::lock_guard<std::mutex> lock(mutex_);
         if (is_empty()) return std::nullopt;
-
+        std::lock_guard<std::mutex> lock(mutex_);
         T result = buffer_[tail_];
         full_    = false;
         tail_    = (tail_ + 1) % max_size_;
@@ -54,13 +54,20 @@ class CircularBuffer {
     }
 
     // return true if the buffer is empty
-    bool is_empty() const { return (!full_ && (head_ == tail_)); }
+    bool is_empty() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return (!full_ && (head_ == tail_));
+    }
 
     // return true if the buffer is full
-    bool is_full() const { return full_; }
+    bool is_full() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return full_;
+    }
 
     // return the number of elements in the buffer
-    size_t size() const {
+    size_t size() {
+        std::lock_guard<std::mutex> lock(mutex_);
         size_t size = max_size_;
         if (!full_) {
             if (head_ >= tail_) size = head_ - tail_;
@@ -77,7 +84,7 @@ class CircularBuffer {
     size_t head_{0};
     size_t tail_{0};
     size_t max_size_;
-    bool full_{false};
+    std::atomic<bool> full_ = false;
 };
 
 #endif // __CIRCULAR_BUFFER_HPP__
