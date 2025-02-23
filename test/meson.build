@@ -35,8 +35,20 @@ wq_test = executable(
     ],
 )
 
+tf_graph = executable(
+    'tf_graph',
+    'tf_graph.cpp',
+    dependencies: [
+        all_dep,
+        structs_dep,
+        work_queue_dep,
+        transform_dep,
+    ],
+)
+
 #! set tests
 test('read_config', read_config)
 test('init_cam', init_cam)
 test('cbuffer_test', cbuffer_test)
 test('wq_test', wq_test)
+test('tf_graph', tf_graph)
