@@ -13,7 +13,7 @@ pnp_solver_dep = declare_dependency(
     link_with: pnp_solver_lib,
 )
 
-tf_lib = static_library(
+transform_lib = static_library(
     'transform',
     'transform.cpp',
     include_directories: [
@@ -27,7 +27,7 @@ tf_lib = static_library(
         structs_dep,
     ],
 )
-tf_dep = declare_dependency(
+transform_dep = declare_dependency(
     include_directories: include_directories('.'),
-    link_with: tf_lib,
+    link_with: transform_lib,
 )
