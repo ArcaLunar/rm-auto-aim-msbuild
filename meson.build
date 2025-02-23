@@ -20,6 +20,8 @@ toml = dependency('tomlplusplus')
 
 mvs = subproject('mvs')
 mvs_dep = mvs.get_variable('mvs_dep')
+tf = subproject('tf3d')
+tf_dep = tf.get_variable('tf_dep')
 
 all_dep = [
     spdlog,
@@ -27,6 +29,7 @@ all_dep = [
     eigen,
     mvs_dep,
     toml,
+    tf_dep,
 ]
 
 ### Directories

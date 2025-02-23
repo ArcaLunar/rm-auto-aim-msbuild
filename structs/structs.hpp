@@ -80,12 +80,16 @@ struct RawFrameInfo {
 // ========================================================
 // IMU Related Data Structures
 // ========================================================
+
 /**
- * @brief Important information from the IMU sensor.
+ * @brief IMU 传感器数据。用于记录当前的姿态信息。辅助 base 系 -> IMU 系的坐标转换
  *
  */
 struct IMUInfo {
     double roll{}, pitch{}, yaw{};
+
+    void load_from_recvmsg(const VisionPLCRecvMsg &msg);
+    cv::Mat rotation() const;
 };
 
 // ========================================================
@@ -94,6 +98,10 @@ struct IMUInfo {
 
 namespace AutoAim {
 
+/**
+ * @brief 灯条过滤参数
+ *
+ */
 struct LightBarConfig {
     double min_ratio, max_ratio;
     double max_angle;
@@ -101,6 +109,10 @@ struct LightBarConfig {
     explicit LightBarConfig(std::string path = "../config/detection_tr.toml");
 };
 
+/**
+ * @brief 装甲板过滤参数
+ *
+ */
 struct ArmorConfig {
     int binary_threshold;
     double min_light_ratio;
@@ -170,17 +182,32 @@ struct AnnotatedArmorInfo {
 
 namespace Tracker {
 
+/**
+ * @brief Tracker 状态。
+ * `FITTING` = 正在拟合车辆运动
+ * `TRACKING` = 正在追踪车辆
+ * `TEMPORARY_LOST` = 短暂丢失
+ * `LOST` = 完全丢失（丢失超过一定时间）
+ */
 enum class TrackingStatus {
     FITTING,
     TRACKING,
     TEMPORARY_LOST,
     LOST,
 };
+
+/**
+ * @brief 车上的甲板数量。用于根据甲板种类，计算（待击打）甲板的位置
+ */
 enum class ArmorCount {
     OUTPOST = 3,
     NORMAL  = 4,
 };
 
+/**
+ * @brief 跟踪器参数
+ * 
+ */
 struct TrackingConfig {
     int lost_timeout;
 };
