@@ -8,6 +8,7 @@ namespace Tracker {
 
 /**
  * @brief 扩展卡尔曼滤波
+ * @details x = [x, y, z, yaw, vx, vy, vz, vyaw, r]^T
  * @ref chenjunnn/rm_auto_aim
  */
 class EKF {

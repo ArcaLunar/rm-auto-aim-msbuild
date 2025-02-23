@@ -1,19 +1,17 @@
 #ifndef __TRACKER_HPP__
 #define __TRACKER_HPP__
 
-namespace Tracker {
+#include "ekf.hpp"
+#include "structs.hpp"
 
-enum class TrackingStatus {
-    FITTING,
-    TRACKING,
-    TEMPORARY_LOST,
-    LOST,
-};
+namespace Tracker {
 
 class Tracker {
   public:
   protected:
     TrackingStatus status_;
+    ArmorCount armor_count_;
+    EKF ekf_;
 
   private:
 };

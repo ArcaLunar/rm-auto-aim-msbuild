@@ -163,3 +163,26 @@ struct AnnotatedArmorInfo {
     IMUInfo imu_info;
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 };
+
+// ========================================================
+// Tracker Related Data Structures
+// ========================================================
+
+namespace Tracker {
+
+enum class TrackingStatus {
+    FITTING,
+    TRACKING,
+    TEMPORARY_LOST,
+    LOST,
+};
+enum class ArmorCount {
+    OUTPOST = 3,
+    NORMAL  = 4,
+};
+
+struct TrackingConfig {
+    int lost_timeout;
+};
+
+} // namespace Tracker

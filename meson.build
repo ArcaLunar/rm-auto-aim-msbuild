@@ -45,7 +45,7 @@ subdir('work_queue')
 subdir('cam_capture')
 subdir('serialport')
 subdir('transform')
-
+subdir('tracker')
 subdir('detector')
 
 subdir('test')
