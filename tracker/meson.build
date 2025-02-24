@@ -23,7 +23,7 @@ tracker_lib = static_library(
     dependencies: [
         all_dep,
         ekf_dep,
-        structs_dep,
+        utils_dep,
     ],
 )
 tracker_dep = declare_dependency(

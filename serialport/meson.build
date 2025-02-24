@@ -3,8 +3,7 @@ serial_port_lib = static_library(
     ['serial_port.cpp', 'serial_port.hpp'],
     dependencies: [
         all_dep,
-        structs_dep,
-        config_dep,
+        utils_dep,
     ],
     install: true,
 )

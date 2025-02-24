@@ -11,7 +11,6 @@ int main() {
     port.initialize_port();
 
     std::thread([&]() { port.read_raw_data_from_port(); }).detach();
-
     std::thread([&]() { port.process_raw_data_from_buffer(); }).detach();
 
     spdlog::info("start receiving test");

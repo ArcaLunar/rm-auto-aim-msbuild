@@ -42,7 +42,6 @@ install_subdir(
 
 ### Structs
 subdir('structs')
-subdir('config')
 subdir('work_queue')
 subdir('cam_capture')
 subdir('serialport')

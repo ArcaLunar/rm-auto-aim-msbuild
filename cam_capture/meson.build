@@ -7,8 +7,7 @@ cam_capture = static_library(
     ],
     dependencies: [
         all_dep,
-        config_dep,
-        structs_dep,
+        utils_dep,
     ],
     install: true,
     # install_dir: join_paths(get_option('prefix'), 'bin'),

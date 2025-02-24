@@ -20,7 +20,7 @@ cbuffer_test = executable(
     'cbuffer_test.cpp',
     dependencies: [
         all_dep,
-        structs_dep,
+        utils_dep,
         work_queue_dep,
     ],
 )
@@ -30,7 +30,7 @@ wq_test = executable(
     'wq_test.cpp',
     dependencies: [
         all_dep,
-        structs_dep,
+        utils_dep,
         work_queue_dep,
     ],
 )
@@ -40,7 +40,7 @@ tf_graph = executable(
     'tf_graph.cpp',
     dependencies: [
         all_dep,
-        structs_dep,
+        utils_dep,
         work_queue_dep,
         transform_dep,
     ],
@@ -51,7 +51,7 @@ df_img_test = executable(
     'dataflow_cam2image_test.cpp',
     dependencies: [
         all_dep,
-        structs_dep,
+        utils_dep,
         work_queue_dep,
         cam_capture_dep,
         serial_port_dep,

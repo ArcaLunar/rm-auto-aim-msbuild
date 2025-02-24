@@ -18,8 +18,7 @@ detector_lib = static_library(
         detector_include,
     ],
     dependencies: [
-        structs_dep,
-        config_dep,
+        utils_dep,
         all_dep,
         pnp_solver_dep,
     ],

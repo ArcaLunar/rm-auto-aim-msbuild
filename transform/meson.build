@@ -4,7 +4,7 @@ pnp_solver_lib = static_library(
     include_directories: include_directories('.'),
     dependencies: [
         all_dep,
-        structs_dep,
+        utils_dep,
     ],
 )
 
@@ -22,9 +22,8 @@ transform_lib = static_library(
     ],
     dependencies: [
         all_dep,
-        config_dep,
         pnp_solver_dep,
-        structs_dep,
+        utils_dep,
     ],
 )
 transform_dep = declare_dependency(
