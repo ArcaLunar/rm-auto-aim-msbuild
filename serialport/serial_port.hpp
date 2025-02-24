@@ -28,7 +28,7 @@ class SerialPort {
      * @brief Destroy the Serial Port object. close port on exit
      *
      */
-    ~SerialPort();
+    // ~SerialPort();
 
     /**
      * @brief Try to open the serial port and set the options.
@@ -75,6 +75,7 @@ class SerialPort {
     boost::asio::io_service io_service_;             // io_service
     std::unique_ptr<boost::asio::serial_port> port_; // 串口
     size_t port_index_{0};                           // 端口索引
+    std::string port_name_;
     std::vector<std::string> alt_ports_;             // 备选端口
 
     SerialPortConfiguration cfg_; // 串口配置

@@ -3,5 +3,5 @@ baud_rate = 460800
 parity = 0
 data_bit = 8
 stop_bit = 1
-sync = true
+sync = 1
 send_interval = 0 #! (milliseconds)

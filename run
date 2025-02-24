@@ -9,7 +9,7 @@ if [ "test" = "$cmd" ]; then
         meson test -C $build_dir
     fi
 elif [ "config" = "$cmd" ]; then
-    meson setup $build_dir
+    meson setup $build_dir --wipe -Dprefix=$(pwd)/output
 elif [ "compile" = "$cmd" ]; then
     meson compile -C $build_dir
 elif [ "install" = "$cmd" ]; then

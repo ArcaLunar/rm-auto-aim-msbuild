@@ -4,6 +4,7 @@ serial_port_lib = static_library(
     dependencies: [
         all_dep,
         structs_dep,
+        config_dep,
     ],
     install: true,
 )

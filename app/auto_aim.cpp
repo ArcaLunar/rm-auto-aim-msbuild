@@ -33,4 +33,7 @@ int main() {
         1
     );
     work_queue.start();
+
+    sleep(1);
+    work_queue.stop();
 }

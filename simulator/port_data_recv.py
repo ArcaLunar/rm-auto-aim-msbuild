@@ -2,7 +2,7 @@ import struct
 import serial
 
 ser = serial.Serial(
-    port="/dev/pts/9",
+    port="/dev/pts/6",
     baudrate=9600,
     bytesize=8,
     parity="N",

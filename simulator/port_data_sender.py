@@ -5,7 +5,7 @@ import random
 
 # 使用 /dev/pty/2 作为接收数据串口，/dev/pty/3 作为发送数据串口
 ser = serial.Serial(
-    port="/dev/pts/8",
+    port="/dev/pts/5",
     baudrate=9600,
     bytesize=8,
     parity="N",
@@ -33,7 +33,7 @@ class Emulator:
         self.end = 0xAA
 
     def __call__(self):
-        if time.time() - self.T >= 5:  # re-generate
+        if time.time() - self.T >= 10:  # re-generate
             self.T = time.time()
             self.roll = random.uniform(-180, 180)
             self.pitch = random.uniform(-180, 180)
@@ -58,5 +58,7 @@ class Emulator:
 
 data = Emulator()
 while True:
-    ser.write(data())
-    time.sleep(1)
+    x = data()
+    ser.write(x)
+    print(data.roll, data.pitch, data.yaw)
+    time.sleep(4)

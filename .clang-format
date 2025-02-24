@@ -1,0 +1,30 @@
+Language: Cpp
+BasedOnStyle: LLVM
+
+AlignConsecutiveAssignments: true
+
+# 每行一个 Parameter
+AlignAfterOpenBracket: BlockIndent
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: true
+BinPackArguments: false
+
+TabWidth: 4
+IndentWidth: 4
+UseTab: Never
+# Short statements
+# AllowShortLoopsOnASingleLine: true
+# AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+# AllowShortFunctionsOnASingleLine: All
+AllowShortCaseLabelsOnASingleLine: true
+# AllowShortBlocksOnASingleLine: Always
+PackConstructorInitializers: NextLine
+IndentCaseLabels: true
+
+ColumnLimit: 120
+AlwaysBreakTemplateDeclarations: true
+BreakBeforeTernaryOperators: true
+# Expression
+AlignOperands: AlignAfterOperator
+BreakBeforeBinaryOperators: All
+

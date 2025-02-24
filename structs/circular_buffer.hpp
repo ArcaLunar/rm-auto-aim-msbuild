@@ -18,10 +18,11 @@
 #ifndef __CIRCULAR_BUFFER_HPP__
 #define __CIRCULAR_BUFFER_HPP__
 
+#include <atomic>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <atomic>
 
 template <typename T>
 class CircularBuffer {
@@ -32,7 +33,7 @@ class CircularBuffer {
      */
     void push(const T &item) {
         std::lock_guard<std::mutex> lock(mutex_);
-        buffer_[head_] = item;
+        std::memcpy(&buffer_[head_], &item, sizeof(T));
         if (is_full()) tail_ = (tail_ + 1) % max_size_;
         head_ = (head_ + 1) % max_size_;
         full_ = head_ == tail_;
@@ -54,14 +55,10 @@ class CircularBuffer {
     }
 
     // return true if the buffer is empty
-    bool is_empty() {
-        return (!full_ && (head_ == tail_));
-    }
+    bool is_empty() { return (!full_ && (head_ == tail_)); }
 
     // return true if the buffer is full
-    bool is_full() {
-        return full_;
-    }
+    bool is_full() { return full_; }
 
     // return the number of elements in the buffer
     size_t size() {

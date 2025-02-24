@@ -49,6 +49,7 @@ class WorkQueue {
                 }
             });
         }
+        for (auto &thread : producer_threads_) { thread.join(); }
 
         // Set up the consumer threads
         for (int i = 0; i < consumer_count_; ++i) {
@@ -66,6 +67,7 @@ class WorkQueue {
                 }
             });
         }
+        for (auto &thread : consumer_threads_) { thread.join(); }
     }
 
     /**
@@ -75,8 +77,6 @@ class WorkQueue {
         stop_ = true;
         for (auto &t : producer_threads_) not_empty_.release();
         for (auto &t : consumer_threads_) not_full_.release();
-        for (auto &t : producer_threads_) t.join();
-        for (auto &t : consumer_threads_) t.join();
     }
 
   protected:
