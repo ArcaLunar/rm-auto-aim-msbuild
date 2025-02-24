@@ -51,6 +51,9 @@ cv::Mat get_translation_vector(const double &dx, const double &dy, const double 
  */
 cv::Mat get_rotation_matrix(const double &rx, const double &ry, const double &rz);
 
+double rad_to_deg(const double &rad);
+double deg_to_rad(const double &deg);
+
 } // namespace Functions
 
 class CoordinateManager {

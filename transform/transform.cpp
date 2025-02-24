@@ -22,13 +22,19 @@ void IMUInfo::load_from_recvmsg(const VisionPLCRecvMsg &msg) {
 
 cv::Mat IMUInfo::rotation() const {
     return HerkulesTransform::Functions::get_rotation_matrix(
-        roll * kDegreeToRadian, pitch * kDegreeToRadian, yaw * kDegreeToRadian
+        HerkulesTransform::Functions::deg_to_rad(roll),
+        HerkulesTransform::Functions::deg_to_rad(pitch),
+        HerkulesTransform::Functions::deg_to_rad(yaw)
     );
 }
 
 // ========================================================
 // Implement for Coordinate Transform
 // ========================================================
+
+double HerkulesTransform::Functions::rad_to_deg(const double &rad) { return rad * kRadianToDegree; }
+
+double HerkulesTransform::Functions::deg_to_rad(const double &deg) { return deg * kDegreeToRadian; }
 
 cv::Mat HerkulesTransform::Functions::get_homography_matrix_from_rotation_translation(
     const cv::Mat &rotation, const cv::Mat &translation

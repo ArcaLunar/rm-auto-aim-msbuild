@@ -1,19 +1,15 @@
-#include <exception>
-#include <spdlog/spdlog.h>
-
-#include "cam_capture.hpp"
 #include "structs.hpp"
 #include "work_queue.hpp"
 
 int main() {
-    spdlog::info("starting auto_aim");
-    spdlog::info("activating camera");
-
+    WorkQueue<RawFrameInfo> annotate_image;
     WorkQueue<AnnotatedArmorInfo> work_queue;
     work_queue.set_producer(
         [&]() -> AnnotatedArmorInfo {
             try {
                 spdlog::info("image producer has loaded.");
+
+                return AnnotatedArmorInfo();
             } catch (std::exception &err) {
                 spdlog::critical("error in auto_aim.main(): {}", err.what());
                 exit(-1);
@@ -33,4 +29,9 @@ int main() {
         1
     );
     work_queue.start();
+
+    sleep(10);
+    work_queue.stop();
+
+    return 0;
 }

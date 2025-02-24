@@ -10,7 +10,7 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 
-template <typename WorkType, int MAX_SIZE = 10000>
+template <typename WorkType, int MAX_SIZE = 1024>
 class WorkQueue {
   public:
     WorkQueue() : producer_count_(0), consumer_count_(0) {}
