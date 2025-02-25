@@ -2,28 +2,41 @@
 #include "serial_port.hpp"
 #include "structs.hpp"
 #include "work_queue.hpp"
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <thread>
 
 int main() {
-    // HikCamera cam;
-    SerialPort port("/media/arca/ArcaEXT4/codebases/pred_v2/config/comm.toml");
-    port.initialize_port();
+    auto cam  = std::make_shared<HikCamera>("/media/arca/ArcaEXT4/codebases/pred_v2/config/cam.toml");
+    auto port = std::make_shared<SerialPort>("/media/arca/ArcaEXT4/codebases/pred_v2/config/comm.toml");
+    port->initialize_port();
 
-    std::thread([&]() { port.read_raw_data_from_port(); }).detach();
-    std::thread([&]() { port.process_raw_data_from_buffer(); }).detach();
+    std::thread([&]() { port->read_raw_data_from_port(); }).detach();
+    std::thread([&]() { port->process_raw_data_from_buffer(); }).detach();
 
-    spdlog::info("start receiving test");
-    while (true) {
-        auto msg = port.get_data();
-        if (msg.has_value()) {
+    auto raw_img = std::make_shared<DataTransmitter<RawFrameInfo>>();
+    raw_img->register_producer([cam]() -> RawFrameInfo { return cam->get_frame(); });
+    raw_img->register_consumer([&](const RawFrameInfo &frame) {
+        spdlog::info("Frame captured at {}", frame.timestamp.time_since_epoch().count());
+        auto recv_msg = port->get_data();
+        if (recv_msg.has_value()) {
+            IMUInfo imu;
+            imu.load_from_recvmsg(recv_msg.value());
             spdlog::info(
-                "data received: roll={} pitch={} yaw={}",
-                msg.value().imu_roll,
-                msg.value().imu_pitch,
-                msg.value().imu_yaw
+                "frame width: {}, height: {}, imu.roll: {}, imu.pitch: {}, imu.yaw: {}",
+                frame.frame.cols,
+                frame.frame.rows,
+                imu.roll,
+                imu.pitch,
+                imu.yaw
             );
         }
-        // } else spdlog::warn("no data received");
-    }
+    });
+
+    raw_img->start();
+
+    sleep(60);
+    spdlog::info("stopping data transfer");
+    raw_img->stop();
+    return 0;
 }

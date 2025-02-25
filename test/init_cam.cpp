@@ -8,7 +8,7 @@ int main() {
     spdlog::info("starting auto_aim");
     spdlog::info("activating camera");
 
-    HikCamera camera;
+    HikCamera camera("/media/arca/ArcaEXT4/codebases/pred_v2/config/cam.toml");
     while (true) {
         auto start = cv::getTickCount();
         cv::Mat frame = camera.get_frame().frame;

@@ -11,6 +11,7 @@ constexpr bool DEBUG_MODE                 = "debug"; // 是否开启调试模式
 constexpr bool SHOW_ANNOTATED_IMAGE       = true;    // 识别完装甲板后是否显示标注装甲板的图像
 constexpr bool SUPPRESS_VALIDATION_SPDLOG = true;    // 抑制 armor.cpp 里的 spdlog 输出（减少日志数量）
 
+constexpr bool CamaraDebug     = false; // set to `false` to disable debug messages from camera capture
 constexpr bool SerialPortDebug = false; // set to `false` to disable debug messages from serial port
 
 //! 赛场参数

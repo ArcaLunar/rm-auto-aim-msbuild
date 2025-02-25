@@ -52,6 +52,7 @@ df_img_test = executable(
     dependencies: [
         all_dep,
         utils_dep,
+        transform_dep,
         work_queue_dep,
         cam_capture_dep,
         serial_port_dep,

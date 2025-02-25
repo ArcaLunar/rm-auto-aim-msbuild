@@ -5,92 +5,90 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <pthread.h>
-#include <semaphore.h>
+#include <semaphore>
 #include <spdlog/spdlog.h>
 #include <vector>
 
-template <typename WorkType, int MAX_SIZE = 1024>
-class WorkQueue {
+/**
+ * @brief 线程安全多生产者多消费者数据传输器
+ * @remark producer() 和 consumer() 里需要使用外部变量的话，必须使用 std::shared_ptr<> 传递外部变量。
+ * 使用例见 `test/dataflow_cam2image_test.cpp`
+ * 
+ * @tparam DataType 数据类型
+ * @tparam BUFFER_SIZE 缓冲大小
+ */
+template <typename DataType, int BUFFER_SIZE = 1024>
+class DataTransmitter {
   public:
-    WorkQueue() : producer_count_(0), consumer_count_(0) {}
+    void register_producer(std::function<DataType()> producer, int count = 1) {
+        for (int i = 0; i < count; i++) {
+            producer_threads_.emplace_back([this, producer] {
+                start_producer_.acquire();
+                while (!stop_) {
+                    empty_.acquire();
+                    if (stop_)
+                        break;
 
-    /**
-     * @brief 设置生产者行为和数量
-     */
-    void set_producer(std::function<WorkType()> producer, int count) {
-        producer_       = producer;
-        producer_count_ = count;
+                    spdlog::info("producing data");
+                    auto data = producer();
+                    buffer_.push(data);
+                    filled_.release();
+                }
+            });
+        }
     }
 
-    /**
-     * @brief 设置消费者行为和数量
-     */
-    void set_consumer(std::function<void(WorkType)> consumer, int count) {
-        consumer_       = consumer;
-        consumer_count_ = count;
+    void register_consumer(std::function<void(const DataType &)> consumer, int count = 1) {
+        for (int i = 0; i < count; i++) {
+            consumer_threads_.emplace_back([this, consumer] {
+                start_consumer_.acquire();
+                while (!stop_) {
+                    filled_.acquire();
+                    if (stop_)
+                        break;
+
+                    spdlog::info("consuming data");
+                    auto data = buffer_.pop();
+                    if (data.has_value())
+                        consumer(data.value());
+                    empty_.release();
+                }
+            });
+        }
     }
 
-    /**
-     * @brief 启动工作队列
-     */
     void start() {
-        // Set up the producer threads
-        for (int i = 0; i < producer_count_; ++i) {
-            producer_threads_.emplace_back([&]() {
-                while (!stop_) {
-                    this->not_full_.acquire(); // 等待队列有空位
-                    if (stop_) break;
+        spdlog::info("start data transfer");
 
-                    WorkType work = this->producer_();
-                    this->buffer_.push(work); // 将任务放入队列
-
-                    this->not_empty_.release(); // 通知消费者队列不为空
-                }
-            });
-        }
-        for (auto &thread : producer_threads_) { thread.join(); }
-
-        // Set up the consumer threads
-        for (int i = 0; i < consumer_count_; ++i) {
-            consumer_threads_.emplace_back([&]() {
-                while (!stop_) {
-                    this->not_empty_.acquire(); // 等待队列不为空
-                    if (stop_) break;
-
-                    auto work = this->buffer_.pop(); // 从队列中取出任务
-                    if (work.has_value()) {
-                        this->consumer_(work.value()); // 处理任务
-
-                        this->not_full_.release(); // 通知生产者队列不满
-                    }
-                }
-            });
-        }
-        for (auto &thread : consumer_threads_) { thread.join(); }
+        start_producer_.release(producer_threads_.size());
+        start_consumer_.release(producer_threads_.size());
     }
 
-    /**
-     * @brief 停止工作队列
-     */
     void stop() {
         stop_ = true;
-        for (auto &t : producer_threads_) not_empty_.release();
-        for (auto &t : consumer_threads_) not_full_.release();
+        for (auto &t : producer_threads_)
+            empty_.release();
+        for (auto &t : consumer_threads_)
+            filled_.release();
     }
 
   protected:
-    CircularBuffer<WorkType> buffer_{MAX_SIZE};                   // 待处理的任务队列
-    std::counting_semaphore<> not_empty_{0}, not_full_{MAX_SIZE}; // 信号量，用于控制队列是否为空或者是否已满
+    CircularBuffer<DataType> buffer_{BUFFER_SIZE};
+    std::counting_semaphore<> empty_{BUFFER_SIZE}, filled_{0};
+
     std::atomic<bool> stop_{false};
 
-    std::function<WorkType()> producer_;
-    int producer_count_;
+    std::function<void()> producer_;
+    std::counting_semaphore<> start_producer_{0};
     std::vector<std::thread> producer_threads_;
 
-    std::function<void(WorkType)> consumer_;
-    int consumer_count_;
+    std::function<void()> consumer_;
+    std::counting_semaphore<> start_consumer_{0};
     std::vector<std::thread> consumer_threads_;
+
+  private:
 };
 
 #endif

@@ -13,9 +13,7 @@
 #include <spdlog/spdlog.h>
 #include <toml++/toml.hpp>
 
-constexpr char ConfigFilePath[] = "../../config/camera_config.json";
-
-HikCamera::HikCamera() {
+HikCamera::HikCamera(const std::string &config_path) {
     // 初始化 SDK
     MV_CC_Initialize();
     // 枚举设备
@@ -27,7 +25,7 @@ HikCamera::HikCamera() {
     // 打开相机
     this->open_camera();
     // 设置相机参数
-    this->setup();
+    this->setup(config_path);
     // 初始化图像捕获，准备捕获图像
     this->initialize_image_retrieval();
 }
@@ -37,19 +35,22 @@ HikCamera::~HikCamera() {
     // 停止捕获图像
     spdlog::info("stop retrieving image");
     int result = MV_CC_StopGrabbing(this->handle_);
-    if (result != MV_OK) spdlog::critical("error stopping");
+    if (result != MV_OK)
+        spdlog::critical("error stopping");
     spdlog::info("stop succeed");
 
     // 关闭相机
     spdlog::info("closing camera");
     result = MV_CC_CloseDevice(this->handle_);
-    if (result != MV_OK) spdlog::critical("error closing");
+    if (result != MV_OK)
+        spdlog::critical("error closing");
     spdlog::info("close succeed");
 
     // 销毁句柄
     spdlog::info("destroying handle");
     result = MV_CC_DestroyHandle(this->handle_);
-    if (result != MV_OK) spdlog::critical("error destroying");
+    if (result != MV_OK)
+        spdlog::critical("error destroying");
     spdlog::info("destroy succeed");
 
     // 释放 SDK
@@ -79,7 +80,8 @@ void HikCamera::debug_devices() {
     for (int i = 0, n = devicelist_.nDeviceNum; i < n; i++) {
         MV_CC_DEVICE_INFO *pDeviceInfo = devicelist_.pDeviceInfo[i];
         spdlog::info("checking device {}", i);
-        if (pDeviceInfo == nullptr) break;
+        if (pDeviceInfo == nullptr)
+            break;
         this->print_device_info(pDeviceInfo);
         camIndex = i;
     }
@@ -137,23 +139,26 @@ cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRA
     } else if (mark == PixelType_Gvsp_BayerGB8) {
         channel_type   = CV_8UC1;
         transform_type = cv::COLOR_BayerGB2RGB;
-    } else spdlog::error("unsupported pixel format");
+    } else
+        spdlog::error("unsupported pixel format");
 
     cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, channel_type, pstImage->pBufAddr);
-    if (transform_type == cv::COLOR_BGR2GRAY) result = src;
-    else cv::cvtColor(src, result, transform_type);
+    if (transform_type == cv::COLOR_BGR2GRAY)
+        result = src;
+    else
+        cv::cvtColor(src, result, transform_type);
 
     return result;
 }
 
-CameraConfig HikCamera::load_config() {
+CameraConfig HikCamera::load_config(const std::string &config_path) {
     // ! 打开配置文件
     spdlog::info("reading from .config");
 
     toml::table T;
     struct CameraConfig config;
     try {
-        T = toml::parse_file("../config/cam.toml");
+        T = toml::parse_file(config_path);
 
         config.pixel_format = T["pixel_format"].value_or("BayerRG8");
         // config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
@@ -163,18 +168,21 @@ CameraConfig HikCamera::load_config() {
         config.gain_auto        = T["gain_auto"].value_or(0);
         config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
         config.gamma            = T["gamma"].value_or(0.5);
-    } catch (const toml::parse_error &e) { spdlog::error("error parsing config file: {}, using fallback", e.what()); }
+    } catch (const toml::parse_error &e) {
+        spdlog::error("error parsing config file: {}, using fallback", e.what());
+    }
 
     return config;
 }
 
-void HikCamera::setup() {
-    auto config = load_config();
+void HikCamera::setup(const std::string &config_path) {
+    auto config = load_config(config_path);
 
 #define SET_PARAM(func, value, item)                                                                                   \
-    if (MV_CC_Set##func(this->handle_, item, value) != MV_OK) {                                                        \
+    if (MV_CC_Set##func(this->handle_, item, value) != MV_OK)                                                          \
         spdlog::critical("setting {} to {} failed", item, value);                                                      \
-    } else spdlog::info("setting {} to {} succeeded.", item, value);
+    else                                                                                                               \
+        spdlog::info("setting {} to {} succeeded.", item, value);
 
     //* Pixel Format
     // if (config.pixel_format == "BayerRG8") {
@@ -201,7 +209,7 @@ void HikCamera::setup() {
     //* Set Gamma
     if (config.adjustable_gamma) {
         SET_PARAM(EnumValue, 1, "GammaSelector");
-        SET_PARAM(FloatValue, config.gamma, "Gamma");
+        // SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
 
 #undef SET_PARAM

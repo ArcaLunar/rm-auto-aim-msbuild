@@ -73,8 +73,8 @@ class HikCamera {
     void open_camera();
 
     /// \brief 设置一系列参数配置
-    CameraConfig load_config();
-    void setup();
+    CameraConfig load_config(const std::string &config_path);
+    void setup(const std::string &config_path);
 
     /// \brief 初始化图像捕获
     void initialize_image_retrieval();
@@ -90,7 +90,7 @@ class HikCamera {
     MV_FRAME_OUT buffer_;
 
   public:
-    HikCamera();
+    HikCamera(const std::string &config_file);
     ~HikCamera();
     /// \brief 获取相机的处理 agent
     void *get_handle() { return handle_; }
