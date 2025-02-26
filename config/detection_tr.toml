@@ -20,9 +20,19 @@ threshold = 0.6 # 置信度阈值. [0, 1]
 
 [mlp]
 threshold = 100
-ignore_class = []
-model_path = "./mlp.onnx"
-labels = ["1", "2", "3", "4", "5", "outpost", "guard", "base", "negative"]
+ignore_class = [] # 不检测的类别
+model_path = "/media/arca/ArcaEXT4/codebases/pred_v2/model.onnx" # 模型路径
+labels = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "outpost",
+    "guard",
+    "base",
+    "negative",
+] # 类别标签
 
 # [light_bar]
 # min_area = 30.0

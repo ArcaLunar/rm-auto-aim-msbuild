@@ -56,6 +56,7 @@ df_img_test = executable(
         work_queue_dep,
         cam_capture_dep,
         serial_port_dep,
+        detector_dep,
     ],
 )
 serial_port_test = executable(

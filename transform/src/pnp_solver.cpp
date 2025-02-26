@@ -1,5 +1,6 @@
 #include "pnp_solver.hpp"
 
+#include <opencv2/calib3d.hpp>
 #include <spdlog/spdlog.h>
 
 AutoAim::PnPSolver::PnPSolver(const std::array<double, 9> &cam_mat, const std::vector<double> &distort_mat) {
@@ -10,10 +11,10 @@ AutoAim::PnPSolver::PnPSolver(const std::array<double, 9> &cam_mat, const std::v
     constexpr double half_h = armor_height / 2;
 
     armor_points_ = {
-        cv::Point3f(0, half_w, -half_h),
-        cv::Point3f(0, half_w, half_h),
-        cv::Point3f(0, -half_w, half_h),
-        cv::Point3f(0, -half_w, -half_h),
+        cv::Point3f(-half_w, half_h, 0),
+        cv::Point3f(half_w, half_h, 0),
+        cv::Point3f(half_w, -half_h, 0),
+        cv::Point3f(-half_w, -half_h, 0),
     };
 }
 
@@ -26,7 +27,7 @@ bool AutoAim::PnPSolver::solve_pnp(const Armor &armor, cv::Mat &rvec, cv::Mat &t
     img_points.push_back(armor.left.bottom);
 
     // solve pnp
-    return cv::solvePnP(armor_points_, img_points, cam_mat_, distort_mat_, rvec, tvec);
+    return cv::solvePnP(armor_points_, img_points, cam_mat_, distort_mat_, rvec, tvec, false, cv::SOLVEPNP_IPPE);
 }
 
 double AutoAim::PnPSolver::distance_to_center(const cv::Point2f &img_point) {

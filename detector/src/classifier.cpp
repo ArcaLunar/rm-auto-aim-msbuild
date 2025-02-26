@@ -47,26 +47,34 @@ void AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const s
 
 AutoAim::Classifier::Classifier(const std::string &config_path) {
     toml::table T;
+    spdlog::info("initializing classifier with config file: \"{}\"", config_path);
     try {
         T                      = toml::parse_file(config_path);
-        const auto &model_path = T["model_path"].value<std::string>();
-        const auto &labels     = T["labels"];
-        threshold_             = T["threshold"].value_or(0);
+        const auto &model_path = T["mlp"]["model_path"].value<std::string>();
+        const auto &labels     = T["mlp"]["labels"];
+        threshold_             = T["mlp"]["threshold"].value_or(0);
         // ignore_classes =
-
+        if (!model_path.has_value())
+            throw std::runtime_error("model_path not found in config file");
         spdlog::info("loading model from {}", model_path.value());
         net_ = cv::dnn::readNetFromONNX(model_path.value());
 
         // Get all labels as strings
         if (toml::array *arr = labels.as_array()) {
             arr->for_each([&](auto &&element) {
-                if (const auto &str_element = element.as_string()) labels_.push_back(str_element->get());
+                if (const auto &str_element = element.as_string())
+                    labels_.push_back(str_element->get());
             });
         }
     } catch (const toml::parse_error &err) {
         spdlog::error("fail to parse config file, {}", err.description());
         exit(-1);
+    } catch (const std::exception &e) {
+        spdlog::error("fail to parse config file, {}", e.what());
+        exit(-1);
     }
+
+    spdlog::info("classifier initialization done");
 }
 
 void AutoAim::Classifier::classify(std::vector<Armor> &armors) {

@@ -5,7 +5,7 @@ import random
 
 # 使用 /dev/pty/2 作为接收数据串口，/dev/pty/3 作为发送数据串口
 ser = serial.Serial(
-    port="/dev/pts/4",
+    port="/dev/pts/3",
     baudrate=9600,
     bytesize=8,
     parity="N",
@@ -61,4 +61,4 @@ while True:
     x = data()
     ser.write(x)
     print(data.roll, data.pitch, data.yaw)
-    time.sleep(1)
+    time.sleep(5)

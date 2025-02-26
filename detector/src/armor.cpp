@@ -1,5 +1,5 @@
-#include "structs.hpp"
 #include "config.hpp"
+#include "structs.hpp"
 
 #include <spdlog/spdlog.h>
 #include <toml++/toml.hpp>
@@ -27,7 +27,7 @@ bool AutoAim::LightBar::is_valid(const LightBarConfig &config) const {
 
     bool is_light = ratio_ok && angle_ok;
 
-    if constexpr (not SUPPRESS_VALIDATION_SPDLOG)
+    if constexpr (InitializationDebug)
         spdlog::info("LightBar(ratio: {}, angle: {}) is_light: {}", ratio, tilt_angle, is_light);
 
     return is_light;
@@ -35,43 +35,55 @@ bool AutoAim::LightBar::is_valid(const LightBarConfig &config) const {
 
 //! LightBarConfig
 AutoAim::LightBarConfig::LightBarConfig(std::string path) {
-    spdlog::info("initializing LightBarConfig with config file: \"{}\"", path);
+    if constexpr (InitializationDebug)
+        spdlog::info("initializing LightBarConfig with config file: \"{}\"", path);
     try {
         auto T          = toml::parse_file(path);
-        this->min_ratio = T["min_ratio"].value_or(0.1);
-        this->max_ratio = T["max_ratio"].value_or(0.5);
-        this->max_angle = T["max_angle"].value_or(45.0);
+        this->min_ratio = T["light_bar"]["min_ratio"].value_or(0.1);
+        this->max_ratio = T["light_bar"]["max_ratio"].value_or(0.5);
+        this->max_angle = T["light_bar"]["max_angle"].value_or(45.0);
+
+        if constexpr (InitializationDebug)
+            spdlog::info(
+                "light_bar param: min_ratio: {}, max_ratio: {}, max_angle: {}", min_ratio, max_ratio, max_angle
+            );
     } catch (const toml::parse_error &e) {
         spdlog::error("Error parsing config file: \"{}\" for LightBarConfig, using fallback", e.what());
     }
-    spdlog::info("LightBarConfig initialization done.");
+    if constexpr (InitializationDebug)
+        spdlog::info("LightBarConfig initialization done.");
 }
 
 //! ArmorConfig
 AutoAim::ArmorConfig::ArmorConfig(std::string path) {
-    spdlog::info("initializing ArmorConfig with config file: \"{}\"", path);
+    if constexpr (InitializationDebug)
+        spdlog::info("initializing ArmorConfig with config file: \"{}\"", path);
+
     try {
         auto T                 = toml::parse_file(path);
-        this->binary_threshold = T["binary_threshold"].value_or(100);
+        this->binary_threshold = T["mlp"]["threshold"].value_or(100);
     } catch (const toml::parse_error &e) {
         spdlog::error("Error parsing config file \"{}\" for ArmorConfig, using fallback", e.what());
     }
-    spdlog::info("ArmorConfig initializzation done.");
+
+    if constexpr (InitializationDebug)
+        spdlog::info("ArmorConfig initialization done.");
 }
 
 //! Armor
 AutoAim::Armor::Armor(const LightBar &l1, const LightBar &l2) : left(l1), right(l2) {
-    if (left.center.x > right.center.x) std::swap(left, right);
+    if (left.center.x > right.center.x)
+        std::swap(left, right);
     center = (left.center + right.center) / 2;
 }
 
 bool AutoAim::Armor::is_valid(const ArmorConfig &config, const LightBar &left, const LightBar &right) {
-    double lightbar_length_ratio = std::min(left.length, right.length) / std::max(left.length, right.length);
-    const bool is_lightbar_length_ok   = lightbar_length_ratio > config.min_light_ratio;
+    double lightbar_length_ratio     = std::min(left.length, right.length) / std::max(left.length, right.length);
+    const bool is_lightbar_length_ok = lightbar_length_ratio > config.min_light_ratio;
 
     // 矩形的长宽比
     const double avg_light_length = (left.length + right.length) / 2;
-    double center_distance  = cv::norm(left.center - right.center) / avg_light_length;
+    double center_distance        = cv::norm(left.center - right.center) / avg_light_length;
     bool center_dist_ok
         = (config.min_small_center_distance <= center_distance && center_distance <= config.max_small_center_distance);
     center_dist_ok
