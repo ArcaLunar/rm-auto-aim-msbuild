@@ -30,3 +30,5 @@ tracker_dep = declare_dependency(
     include_directories: ['./'],
     link_with: tracker_lib,
 )
+
+all_dep += [tracker_dep, ekf_dep]

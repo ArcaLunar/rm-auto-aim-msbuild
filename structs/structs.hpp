@@ -96,15 +96,30 @@ struct IMUInfo {
 // Detector Related Data Structures
 // ========================================================
 
+struct RawSensorData {
+    RawFrameInfo raw;
+    IMUInfo imu;
+};
+
 namespace AutoAim {
+
+enum class ArmorType {
+    None,
+    Small,
+    Large,
+};
 
 /**
  * @brief 灯条过滤参数
  *
  */
 struct LightBarConfig {
-    double min_ratio, max_ratio;
+    double min_area, max_area;
+    double min_solidity;
+    double min_aspect_ratio, max_aspect_ratio;
     double max_angle;
+    int brightness_threshold;
+    int color_threshold;
 
     explicit LightBarConfig(std::string path = "../config/detection_tr.toml");
 };
@@ -114,11 +129,18 @@ struct LightBarConfig {
  *
  */
 struct ArmorConfig {
-    int binary_threshold;
-    double min_light_ratio;
-    double min_small_center_distance, max_small_center_distance;
-    double min_large_center_distance, max_large_center_distance;
-    double max_angle;
+    double max_angle_diff;
+    double max_height_diff_ratio;
+    double max_Y_diff_ratio;
+    double min_X_diff_ratio;
+    double big_armor_ratio, small_armor_ratio;
+    double min_aspect_ratio, max_aspect_ratio;
+    double min_area;
+    double max_roll_angle;
+    double max_light_bar_armor_area_ratio;
+    double area_normalized_base;
+    double sight_offset_normalized_base;
+    double lightbar_area_ratio;
 
     explicit ArmorConfig(std::string path = "../config/detection_tr.toml");
 };
@@ -127,17 +149,20 @@ struct ArmorConfig {
  * @brief 灯条 class
  * @remark chenjunnn/rm_auto_aim
  */
-struct LightBar : public cv::RotatedRect {
-    double length, width;            // 灯条的长度和宽度
-    double tilt_angle;               // 倾斜角度
-    std::vector<cv::Point2f> points; // 矩形的四个顶点
-    cv::Point2f top, bottom;
-    std::string color;
+struct LightBar {
+    std::vector<cv::Point> contour; // 灯条轮廓
+    cv::RotatedRect ellipse;
+    std::vector<cv::Point2f> vertices;
+    double long_axis, short_axis;      // 长短轴
+    double angle;                      // 倾斜角度, [-90, 90), deg
+    double ellipse_area, contour_area; // 椭圆面积、轮廓面积
+    double solidity;                   // 轮廓面积/椭圆面积
 
-    // 从配置文件中读取灯条的配置
-    explicit LightBar() = default;
-    explicit LightBar(const cv::RotatedRect &rect);
+    explicit LightBar();
+    explicit LightBar(const std::vector<cv::Point> &contour);
+    ~LightBar();
 
+    cv::Point2f center() const;
     /// 判断灯条是否合法
     bool is_valid(const LightBarConfig &config) const;
 };
@@ -147,20 +172,18 @@ struct LightBar : public cv::RotatedRect {
  */
 struct Armor {
     //* 灯条
-    LightBar left, right; // 左右灯条
-    cv::Point2f center;   // 装甲板中心
-
-    //* 装甲板上的数字/图案
-    cv::Mat number_img;  // 用于识别数字的装甲板图像
-    double confidence;   // 识别的置信度
-    std::string summary; // 识别的结果
-    std::string result;  // 识别的数字
+    LightBar left, right;              // 左右灯条
+    std::vector<cv::Point2f> vertices; // 装甲板四个顶点
+    cv::Point2f center;                // 装甲板中心
+    ArmorType type;                    // 装甲板类型
+    cv::RotatedRect min_rect;          // 装甲板最小外接矩形
+    double angle;                      // 装甲板倾斜角度, [-90, 90), deg
 
     Armor() = default;
     explicit Armor(const LightBar &l1, const LightBar &l2);
 
     // 判断装甲板是否合法
-    static bool is_valid(const ArmorConfig &config, const LightBar &left, const LightBar &right);
+    bool is_valid(const ArmorConfig &config);
 };
 
 } // namespace AutoAim
@@ -206,7 +229,7 @@ enum class ArmorCount {
 
 /**
  * @brief 跟踪器参数
- * 
+ *
  */
 struct TrackingConfig {
     int lost_timeout;

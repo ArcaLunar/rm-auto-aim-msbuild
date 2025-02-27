@@ -8,3 +8,5 @@ utils_dep = declare_dependency(
         opencv,
     ],
 )
+
+all_dep += utils_dep

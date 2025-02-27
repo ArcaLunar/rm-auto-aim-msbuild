@@ -9,9 +9,15 @@
 #ifndef __POLICY_HPP__
 #define __POLICY_HPP__
 
+#include "structs.hpp"
+
 class PolicySelector {
   public:
-    void Select() {}
+    void relabel(AutoAim::Armor &armor);
+    void select();
+
+  protected:
+    AutoAim::Armor previous_;
 };
 
 #endif // __POLICY_HPP__

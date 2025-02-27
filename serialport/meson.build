@@ -12,3 +12,5 @@ serial_port_dep = declare_dependency(
     include_directories: include_directories('.'),
     link_with: serial_port_lib,
 )
+
+all_dep += serial_port_dep

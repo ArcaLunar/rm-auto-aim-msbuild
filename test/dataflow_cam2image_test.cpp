@@ -23,7 +23,7 @@ int main() {
     auto raw_img = std::make_shared<DataTransmitter<RawFrameInfo>>();
     raw_img->register_producer([cam]() -> RawFrameInfo { return cam->get_frame(); });
     raw_img->register_consumer([&](const RawFrameInfo &frame) {
-        spdlog::info("Frame captured at {}", frame.timestamp.time_since_epoch().count());
+        // spdlog::info("Frame captured at {}", frame.timestamp.time_since_epoch().count());
         auto time     = std::chrono::system_clock::now();
         auto recv_msg = port->get_data();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time - frame.timestamp);
@@ -44,7 +44,7 @@ int main() {
 
     raw_img->start();
 
-    sleep(60);
+    sleep(10);
     spdlog::info("stopping data transfer");
     raw_img->stop();
     return 0;

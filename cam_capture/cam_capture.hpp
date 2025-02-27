@@ -98,7 +98,7 @@ class HikCamera {
     static cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
 
     /**
-     * @brief 获取一帧图像，打上时间戳
+     * @brief 获取一帧 BGR 图像，打上时间戳
      */
     RawFrameInfo get_frame();
 };

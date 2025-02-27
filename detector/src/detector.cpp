@@ -1,122 +1,169 @@
-#include "classifier.hpp"
-#include "config.hpp"
 #include "detector.hpp"
+#include "config.hpp"
 #include "structs.hpp"
+
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
 
 //! Detector
-AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_config_(path), classifier_(path) {
+AutoAim::Detector::Detector(std::string path) : light_bar_config_(path), armor_config_(path) {
     spdlog::info("Detector initialized with config file: \"{}\"", path);
 }
 
 std::vector<AutoAim::Armor> AutoAim::Detector::detect(const cv::Mat &img) {
     auto binary = this->preprocess_image(img);
+    cv::imshow("binary", binary);
+    cv::waitKey();
     auto lights = this->detect_lightbars(img, binary);
     auto armors = this->pair_lightbars(lights);
-
-    if (!armors.empty()) {
-        spdlog::info("detected {} armors", armors.size());
-        this->classifier_.extract_region_of_interest(img, armors);
-        this->classifier_.classify(armors);
-    } else spdlog::info("no armors detected");
 
     return armors;
 }
 
 cv::Mat AutoAim::Detector::preprocess_image(const cv::Mat &src) {
-    cv::Mat gray;
-    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
+    cv::Mat gray, grayColor, binary_color, binary, binary_brightness;
 
-    cv::Mat binary;
-    cv::threshold(gray, binary, this->armor_config_.binary_threshold, 255, cv::THRESH_BINARY);
+    // 提取亮度
+    cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray, binary_brightness, this->light_bar_config_.brightness_threshold, 255, cv::THRESH_BINARY);
+
+    // 红蓝通道作差，提取颜色
+    std::vector<cv::Mat> channels;
+    cv::split(src, channels);
+    int enemy_color = EnemyColor == RMColor::Blue ? 0 : 2;
+    int ally_color  = EnemyColor == RMColor::Blue ? 2 : 0;
+    cv::subtract(channels[enemy_color], channels[ally_color], grayColor);
+
+    cv::threshold(grayColor, binary_color, light_bar_config_.color_threshold, 255, cv::THRESH_BINARY);
+    cv::bitwise_and(binary_brightness, binary_color, binary);
+    // cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)), cv::Point(0, 0), 7);
+    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)), cv::Point(-1, -1), 7);
+
+    if constexpr (DetectorDebug)
+        spdlog::info("preprocessed image");
 
     return binary;
 }
 
 std::vector<AutoAim::LightBar> AutoAim::Detector::detect_lightbars(const cv::Mat &rgb, const cv::Mat &binary) {
     // 用 contour 轮廓找出灯条
-    std::vector<std::vector<cv::Point2f>> contours;
+    if constexpr (DetectorDebug)
+        spdlog::info("detecting lightbars");
+
+    std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(binary, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+
+    if constexpr (DetectorDebug)
+        spdlog::info("found {} contours, filtering lightbars", contours.size());
 
     std::vector<LightBar> lights;
-    for (const auto &contour : contours) {
-        if (contour.size() < 5) continue;
-
-        auto r_rect = cv::minAreaRect(contour);
-        auto light  = LightBar(r_rect);
-
-        if (light.is_valid(this->light_bar_config_)) {
-            auto rect = light.boundingRect();
-            // 过滤不可能的灯条
-            if (rect.x < 0 || rect.y < 0 || rect.x + rect.width > rgb.cols || rect.y + rect.height > rgb.rows
-                || rect.width < 0 || rect.height < 0) {
-                continue;
-            }
-
-            int sum_r = 0, sum_b = 0;
-            auto roi = rgb(rect); // RGB 下灯条区域
-            for (int i = 0; i < roi.rows; i++) {
-                for (int j = 0; j < roi.cols; j++) {
-                    sum_r += roi.at<cv::Vec3b>(i, j)[0];
-                    sum_b += roi.at<cv::Vec3b>(i, j)[2];
-                }
-            }
-
-            // 用红色、蓝色灯条的像素值的和 判断灯条颜色
-            light.color = sum_r > sum_b ? "red" : "blue";
-            spdlog::info(
-                "detected lightbar: color={}, angle={}, length={}, width={}",
-                light.color,
-                light.angle,
-                light.length,
-                light.width
-            );
-            lights.push_back(light);
+    for (int i = 0; i < contours.size(); i++) {
+        if (contours[i].size() < 5) {
+            spdlog::error("skipping, less than 5 points in the contour");
+            continue;
         }
+        if (hierarchy[i][3] != -1) {
+            spdlog::error("skipping, has parent hierachy");
+            continue;
+        }
+
+        LightBar light(contours[i]);
+        if (light.is_valid(this->light_bar_config_))
+            lights.push_back(light);
+
+        // 绘制灯条（调试用）
+        if constexpr (DetectorDebug)
+            cv::ellipse(this->debug_frame, light.ellipse, cv::Scalar(0, 0, 255), 2);
     }
+
+    if constexpr (DetectorDebug)
+        spdlog::info("detected {} lightbars", lights.size());
 
     return lights;
 }
 
-std::vector<AutoAim::Armor> AutoAim::Detector::pair_lightbars(const std::vector<AutoAim::LightBar> &lights) {
+std::vector<AutoAim::Armor> AutoAim::Detector::pair_lightbars(std::vector<AutoAim::LightBar> &lights) {
+    if constexpr (DetectorDebug)
+        spdlog::info("start pairing");
     std::vector<AutoAim::Armor> armors;
+    std::sort(lights.begin(), lights.end(), [](const LightBar &a, const LightBar &b) {
+        return a.center().x < b.center().x;
+    });
 
     // 两两枚举进行匹配
     for (auto light1 = lights.begin(); light1 != lights.end(); light1++) {
         for (auto light2 = light1 + 1; light2 != lights.end(); light2++) {
-            // 过滤己方颜色灯条
-            if (light1->color != COLOR_TO_DETECT || light2->color != COLOR_TO_DETECT) continue;
+            Armor tmp(*light1, *light2);
             // 检查灯条中间是否还夹着其他灯条，是的话不可能组成装甲板
-            if (this->check_mispair(*light1, *light2, lights)) continue;
+            if constexpr (DetectorDebug)
+                spdlog::info("checking mispair");
+            if (this->check_mispair(tmp, lights)) {
+                if constexpr (DetectorDebug)
+                    spdlog::error("mispair_check failed");
+                continue;
+            } else if constexpr (DetectorDebug)
+                spdlog::info("mispair_check passed");
+
             // 检查组成的装甲板是否合法
-            if (Armor::is_valid(this->armor_config_, *light1, *light2)) armors.emplace_back(*light1, *light2);
+            if constexpr (DetectorDebug)
+                spdlog::info("doing armor_validation check");
+            if (tmp.is_valid(this->armor_config_)) {
+                if constexpr (DetectorDebug)
+                    spdlog::info("armor_validation passed");
+                armors.push_back(tmp);
+            } else if constexpr (DetectorDebug)
+                spdlog::error("armor_validation failed");
         }
     }
+    if constexpr (DetectorDebug)
+        spdlog::info("paired {} armors", armors.size());
+
     return armors;
 }
 
-bool AutoAim::Detector::check_mispair(
-    const AutoAim::LightBar &light1, const AutoAim::LightBar &light2, const std::vector<AutoAim::LightBar> &lights
-) {
-    auto points = std::vector<cv::Point2f>{light1.top, light1.bottom, light2.top, light2.bottom};
-    auto rect   = cv::boundingRect(points);
-
+bool AutoAim::Detector::check_mispair(const Armor &armor, const std::vector<AutoAim::LightBar> &lights) {
+    auto &points = armor.vertices;
+    auto rect    = cv::boundingRect(points);
     for (const auto &light : lights) {
-        if (light.center == light1.center || light.center == light2.center) continue;
+        if (light.center() == armor.left.center() || light.center() == armor.right.center())
+            continue; // 忽略已经匹配的灯条
 
-        if (rect.contains(light.center) || rect.contains(light.top) || rect.contains(light.bottom)) return true;
+        if (cv::pointPolygonTest(points, light.center(), false) >= 0)
+            return true;
     }
 
     return false;
 }
 
 void AutoAim::Detector::draw_results_to_image(cv::Mat &img, const std::vector<Armor> &armors) {
-    if constexpr (!SHOW_ANNOTATED_IMAGE) return;
+    if constexpr (!DisplayAnnotatedImageDebug)
+        return;
 
     // draw armors
     for (const auto &armor : armors) {
-        cv::line(img, armor.left.top, armor.right.bottom, cv::Scalar(0, 255, 0), 2);
-        cv::line(img, armor.left.bottom, armor.right.top, cv::Scalar(0, 255, 0), 2);
+        std::vector<cv::Point> v1{armor.vertices[0], armor.vertices[1]};
+        std::vector<cv::Point> v2{armor.vertices[1], armor.vertices[2]};
+        std::vector<cv::Point> v3{armor.vertices[2], armor.vertices[3]};
+        std::vector<cv::Point> v4{armor.vertices[3], armor.vertices[0]};
+        cv::polylines(img, v1, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v2, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v3, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v4, true, cv::Scalar(0, 0, 255), 2);
+        cv::putText(
+            img,
+            armor.type == ArmorType::Small ? "Small" : "Big",
+            armor.center,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 255, 0),
+            2
+        );
     }
+
+    // draw image
+    cv::Mat tmp;
+    cv::imshow("Annotated Image", img);
+    cv::waitKey();
 }

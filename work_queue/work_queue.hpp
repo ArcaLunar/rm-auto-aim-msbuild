@@ -11,11 +11,13 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 
+#include "config.hpp"
+
 /**
  * @brief 线程安全多生产者多消费者数据传输器
  * @remark producer() 和 consumer() 里需要使用外部变量的话，必须使用 std::shared_ptr<> 传递外部变量。
  * 使用例见 `test/dataflow_cam2image_test.cpp`
- * 
+ *
  * @tparam DataType 数据类型
  * @tparam BUFFER_SIZE 缓冲大小
  */
@@ -31,7 +33,8 @@ class DataTransmitter {
                     if (stop_)
                         break;
 
-                    spdlog::info("producing data");
+                    if constexpr (ProducerConsumerModelDebug)
+                        spdlog::info("producing data");
                     auto data = producer();
                     buffer_.push(data);
                     filled_.release();
@@ -49,7 +52,9 @@ class DataTransmitter {
                     if (stop_)
                         break;
 
-                    spdlog::info("consuming data");
+                    if constexpr (ProducerConsumerModelDebug)
+                        spdlog::info("consuming data");
+
                     auto data = buffer_.pop();
                     if (data.has_value())
                         consumer(data.value());
@@ -68,10 +73,16 @@ class DataTransmitter {
 
     void stop() {
         stop_ = true;
-        for (auto &t : producer_threads_)
+        for (auto &t : producer_threads_) {
+            if (t.joinable())
+                t.join();
             empty_.release();
-        for (auto &t : consumer_threads_)
+        }
+        for (auto &t : consumer_threads_) {
+            if (t.joinable())
+                t.join();
             filled_.release();
+        }
     }
 
   protected:

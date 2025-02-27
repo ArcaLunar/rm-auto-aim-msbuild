@@ -1,3 +1,4 @@
+# 测试相机是否可以正常打开
 init_cam = executable(
     'init_cam',
     'init_cam.cpp',
@@ -7,6 +8,7 @@ init_cam = executable(
     ],
 )
 
+# 测试能否正常读取配置文件
 read_config = executable(
     'read_config',
     'read_config.cpp',
@@ -15,6 +17,7 @@ read_config = executable(
     ],
 )
 
+# 测试循环缓冲区是否正常工作
 cbuffer_test = executable(
     'cbuffer_test',
     'cbuffer_test.cpp',
@@ -25,6 +28,7 @@ cbuffer_test = executable(
     ],
 )
 
+# 测试 DataTransmitter 是否可以正常工作
 wq_test = executable(
     'wq_test',
     'wq_test.cpp',
@@ -35,6 +39,7 @@ wq_test = executable(
     ],
 )
 
+# 测试 TransformManager
 tf_graph = executable(
     'tf_graph',
     'tf_graph.cpp',
@@ -46,6 +51,7 @@ tf_graph = executable(
     ],
 )
 
+# 测试 DataFlow (port + camera + DataTransmitter --> image/RawImageInfo)
 df_img_test = executable(
     'dataflow_img',
     'dataflow_cam2image_test.cpp',
@@ -59,12 +65,24 @@ df_img_test = executable(
         detector_dep,
     ],
 )
+
+# 测试串口通信
 serial_port_test = executable(
     'serialport_test',
     'serial_port_test.cpp',
     dependencies: [
         all_dep,
         serial_port_dep,
+    ],
+)
+
+detector_test = executable(
+    'detector_test',
+    'detector_test.cpp',
+    dependencies: [
+        all_dep,
+        utils_dep,
+        detector_dep,
     ],
 )
 
@@ -76,3 +94,4 @@ test('wq_test', wq_test)
 test('tf_graph', tf_graph)
 test('dataflow_img', df_img_test)
 test('sport_test', serial_port_test)
+test('detector_test', detector_test)

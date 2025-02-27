@@ -2,7 +2,6 @@
 #define __DETECTOR_HPP__
 
 #include "structs.hpp"
-#include "classifier.hpp"
 
 #include <opencv2/core.hpp>
 #include <spdlog/spdlog.h>
@@ -13,7 +12,7 @@ namespace AutoAim {
 class Detector {
     LightBarConfig light_bar_config_;
     ArmorConfig armor_config_;
-    Classifier classifier_;
+    cv::Mat debug_frame;
 
     /* ==== Functions ==== */
 
@@ -24,13 +23,10 @@ class Detector {
     std::vector<LightBar> detect_lightbars(const cv::Mat &rgb, const cv::Mat &binary);
 
     // 将一组灯条匹配成装甲板
-    std::vector<Armor> pair_lightbars(const std::vector<LightBar> &lights);
+    std::vector<Armor> pair_lightbars(std::vector<LightBar> &lights);
 
     // 检测两个匹配的灯条之间是否还有其他灯条
-    bool check_mispair(const LightBar &light1, const LightBar &light2, const std::vector<LightBar> &lights);
-
-    // （调试用）将检测结果绘制到图像上
-    void draw_results_to_image(cv::Mat &img, const std::vector<Armor> &armors);
+    bool check_mispair(const Armor &armor, const std::vector<LightBar> &lights);
 
   public:
     // 载入配置文件
@@ -38,6 +34,9 @@ class Detector {
 
     // 检测装甲板
     std::vector<Armor> detect(const cv::Mat &img);
+
+    // （调试用）将检测结果绘制到图像上
+    void draw_results_to_image(cv::Mat &img, const std::vector<Armor> &armors);
 };
 
 } // namespace AutoAim

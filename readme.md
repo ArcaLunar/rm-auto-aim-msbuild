@@ -1,3 +1,25 @@
+# Progress
+
+- [x] Camera Capture
+  - [x] Open camera
+  - [x] Grab images and tag time stamp
+- [x] Serial port
+  - [x] Connection
+  - [x] Read and send
+  - [ ] Reconection
+- [ ] Detector
+  - [x] Data flow
+  - [ ] Accuracy
+- [ ] Policy
+  - [ ] armor selection
+- [ ] Transform
+  - [ ] Cordinate Transform
+  - [ ] Solve PNP
+- [ ] Tracker
+  - [x] EKF
+
+# Overview
+
 ## `detector` 模块
 
 包含 `detector` 和 `classifier`

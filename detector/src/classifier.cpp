@@ -1,69 +1,45 @@
 #include "classifier.hpp"
+#include "config.hpp"
 
 #include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/opencv.hpp>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <toml++/toml.h>
-
-void AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const std::vector<Armor> &armors) {
-    const int warp_height  = 28;
-    const int light_length = 12;
-    const cv::Size roi_size(20, 28);
-
-    spdlog::info("extracting region of interest from armor...");
-    //* 从装甲板中心提取数字区域
-    for (auto &armor : armors) {
-        // 透视变换
-        cv::Point2f src_points[] = {armor.left.bottom, armor.right.top, armor.right.top, armor.right.bottom};
-        const int top_light_y    = (warp_height - light_length) / 2 - 1;
-        const int bottom_light_y = top_light_y + light_length;
-        const int warp_width     = 32;
-
-        cv::Point2f dst_points[] = {
-            cv::Point2f(0, bottom_light_y),
-            cv::Point2f(0, top_light_y),
-            cv::Point2f(warp_width - 1, top_light_y),
-            cv::Point2f(warp_width - 1, bottom_light_y),
-        };
-
-        // 将原图透视变换，保存到 number_img
-        cv::Mat number_img;
-        auto rotation_matrix = cv::getPerspectiveTransform(src_points, dst_points);
-        cv::warpPerspective(img, number_img, rotation_matrix, cv::Size(warp_width, warp_height));
-
-        // 提取数字区域
-        number_img = number_img(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
-
-        // 二值化
-        cv::cvtColor(number_img, number_img, cv::COLOR_BGR2GRAY);
-        cv::threshold(number_img, number_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-
-        number_img.copyTo(armor.number_img);
-    }
-    spdlog::info("batch extracting finished");
-}
 
 AutoAim::Classifier::Classifier(const std::string &config_path) {
     toml::table T;
-    spdlog::info("initializing classifier with config file: \"{}\"", config_path);
+    if constexpr (InitializationDebug)
+        spdlog::info("initializing classifier with config file: \"{}\"", config_path);
+
     try {
-        T                      = toml::parse_file(config_path);
-        const auto &model_path = T["mlp"]["model_path"].value<std::string>();
-        const auto &labels     = T["mlp"]["labels"];
-        threshold_             = T["mlp"]["threshold"].value_or(0);
-        // ignore_classes =
+        T                           = toml::parse_file(config_path);
+        const auto &model_path      = T["mlp"]["model_path"].value<std::string>();
+        const auto &labels          = T["mlp"]["labels"];
+        this->confidence_threshold_ = T["mlp"]["confidence_threshold"].value_or(0);
+        const auto &ignore_classes  = T["mlp"]["ignore_class"];
+
         if (!model_path.has_value())
             throw std::runtime_error("model_path not found in config file");
-        spdlog::info("loading model from {}", model_path.value());
+        if constexpr (InitializationDebug)
+            spdlog::info("loading model from {}", model_path.value());
+
         net_ = cv::dnn::readNetFromONNX(model_path.value());
 
-        // Get all labels as strings
+        // 提取识别标签
         if (toml::array *arr = labels.as_array()) {
             arr->for_each([&](auto &&element) {
                 if (const auto &str_element = element.as_string())
                     labels_.push_back(str_element->get());
+            });
+        }
+        // 提取忽略标签
+        if (toml::array *arr = ignore_classes.as_array()) {
+            arr->for_each([&](auto &&element) {
+                if (const auto &str_element = element.as_string())
+                    ignore_.push_back(str_element->get());
             });
         }
     } catch (const toml::parse_error &err) {
@@ -74,64 +50,96 @@ AutoAim::Classifier::Classifier(const std::string &config_path) {
         exit(-1);
     }
 
-    spdlog::info("classifier initialization done");
+    if constexpr (InitializationDebug)
+        spdlog::info("classifier initialization done");
 }
 
-void AutoAim::Classifier::classify(std::vector<Armor> &armors) {
-    spdlog::info("classifying armor...");
-    for (auto &armor : armors) {
-        cv::Mat img = armor.number_img.clone();
+cv::Mat AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const Armor &armor) {
+    // 计算数字区域
+    cv::Point2f vecLeft = armor.vertices[3] - armor.vertices[0];
+    double lenLeft      = cv::norm(armor.vertices[3] - armor.vertices[0]);
+    vecLeft /= cv::norm(vecLeft);
+    cv::Point2f top_left    = armor.vertices[0] - (lenLeft / 3) * vecLeft;
+    cv::Point2f bottom_left = armor.vertices[3] + (lenLeft / 3) * vecLeft;
 
-        // Normalize
-        img.convertTo(img, CV_32F, 1.0 / 255);
+    cv::Point2f vecRight = armor.vertices[2] - armor.vertices[1];
+    double lenRight      = cv::norm(armor.vertices[2] - armor.vertices[1]);
+    vecRight /= cv::norm(vecRight);
+    cv::Point2f top_right    = armor.vertices[1] - (lenRight / 3) * vecRight;
+    cv::Point2f bottom_right = armor.vertices[2] + (lenRight / 3) * vecRight;
 
-        // Create blob
-        cv::Mat blob;
-        cv::dnn::blobFromImage(img, blob);
+    double horizontal_len = (cv::norm(top_left - top_right) + cv::norm(bottom_left - bottom_right)) / 2;
+    top_left.x += horizontal_len * 0.3;
+    top_right.x -= horizontal_len * 0.3;
+    bottom_left.x += horizontal_len * 0.3;
+    bottom_right.x -= horizontal_len * 0.3;
 
-        // 准备 MLP
-        net_.setInput(blob);
-        cv::Mat output = net_.forward();
+    // 限制边界
+    std::clamp(top_left.x, 1.0f, static_cast<float>(img.cols) - 1);
+    std::clamp(top_left.y, 1.0f, static_cast<float>(img.rows) - 1);
+    std::clamp(top_right.x, 1.0f, static_cast<float>(img.cols) - 1);
+    std::clamp(top_right.y, 1.0f, static_cast<float>(img.rows) - 1);
+    std::clamp(bottom_left.x, 1.0f, static_cast<float>(img.cols) - 1);
+    std::clamp(bottom_left.y, 1.0f, static_cast<float>(img.rows) - 1);
+    std::clamp(bottom_right.x, 1.0f, static_cast<float>(img.cols) - 1);
+    std::clamp(bottom_right.y, 1.0f, static_cast<float>(img.rows) - 1);
 
-        // Softmax
-        float max_prob = *std::max_element(output.begin<float>(), output.end<float>());
-        cv::Mat softmax_prob;
-        cv::exp(output - max_prob, softmax_prob);
-        float sum = static_cast<float>(cv::sum(softmax_prob)[0]);
-        softmax_prob /= sum;
+    // 透视变换
+    cv::Mat pattern_img;
+    cv::Point2f src_points[4] = {top_left, top_right, bottom_right, bottom_left};
+    cv::Point2f dst_points[4]
+        = {cv::Point2f(0, 0),
+           cv::Point2f(ModelInputWidth, 0),
+           cv::Point2f(ModelInputWidth, ModelInputHeight),
+           cv::Point2f(0, ModelInputHeight)}; // model.onnx 为 64x64
+    cv::Mat warpMatrix = cv::getPerspectiveTransform(src_points, dst_points);
+    cv::warpPerspective(img, pattern_img, warpMatrix, cv::Size(ModelInputWidth, ModelInputHeight));
 
-        // 计算置信度
-        double confidence;
-        cv::Point class_id_point;
-        cv::minMaxLoc(softmax_prob.reshape(1, 1), nullptr, &confidence, nullptr, &class_id_point);
-        int class_id = class_id_point.x;
+    return pattern_img;
+}
 
-        armor.confidence = confidence;
-        armor.result     = labels_[class_id];
-        armor.summary    = fmt::format("result: {}, confidence: {:.2f}%", armor.result, armor.confidence * 100.0);
-    }
+std::vector<cv::Mat>
+AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const std::vector<Armor> &armors) {
+    std::vector<cv::Mat> rois;
+    for (const auto &armor : armors)
+        rois.push_back(extract_region_of_interest(img, armor));
+    return rois;
+}
 
-    // Filter armors that do not meet the requirements
-    armors.erase(
-        std::remove_if(
-            armors.begin(),
-            armors.end(),
-            [this](const Armor &armor) {
-                if (armor.confidence < threshold_) {
-                    spdlog::info("droping: confidence too low, ignore armor with confidence: {:.2f}", armor.confidence);
-                    return true;
-                }
+std::string AutoAim::Classifier::classify(const cv::Mat &roi) {}
 
-                for (const auto &ignore_class : ignore_) {
-                    if (armor.result == ignore_class) {
-                        spdlog::info("droping: ignore class, ignore armor with result: {}", armor.result);
-                        return true;
-                    }
-                }
+cv::Mat AutoAim::Classifier::softmax(const cv::Mat &src) {
+    cv::Mat dst;
+    float sum = 0.0, max = 0.0;
 
-                return false;
-            }
-        ),
-        armors.end()
+    max = *std::max_element(src.begin<float>(), src.end<float>());
+    cv::exp(src - max, dst);
+    sum = cv::sum(dst)[0];
+    dst /= sum;
+
+    return dst;
+}
+
+std::string AutoAim::Classifier::inference(cv::Mat &src) {
+    preprocess(src); //* 预处理
+
+    cv::Mat inputBlob = cv::dnn::blobFromImage(
+        src, 1.0 / 255, cv::Size(ModelInputWidth, ModelInputHeight), cv::Scalar(0), false, false
     );
+    net_.setInput(inputBlob);
+    cv::Mat output = net_.forward();
+
+    cv::Mat prob = softmax(output.reshape(1, 1));
+
+    cv::Point classIdPoint;
+    double confidence;
+    cv::minMaxLoc(prob, nullptr, &confidence, nullptr, &classIdPoint);
+    int classId = classIdPoint.x;
+
+    if (confidence > confidence_threshold_)
+        return std::to_string(classIdPoint.x);
+    else
+        return "unknown";
 }
+
+void AutoAim::Classifier::preprocess(cv::Mat &src) { cv::cvtColor(src, src, cv::COLOR_BGR2GRAY); }

@@ -28,3 +28,5 @@ detector_dep = declare_dependency(
     include_directories: detector_include,
     link_with: detector_lib,
 )
+
+all_dep += detector_dep

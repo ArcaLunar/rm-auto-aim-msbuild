@@ -1,7 +1,8 @@
 #include "cam_capture.hpp"
+#include "config.hpp"
+#include "structs.hpp"
 
 #include "MvCameraControl.h"
-#include "structs.hpp"
 #include "toml++/impl/parse_error.hpp"
 #include "toml++/impl/parser.hpp"
 
@@ -147,7 +148,7 @@ cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRA
         result = src;
     else
         cv::cvtColor(src, result, transform_type);
-
+    cv::cvtColor(result, result, cv::COLOR_RGB2BGR);
     return result;
 }
 
@@ -233,9 +234,10 @@ cv::Mat HikCamera::__get_frame() {
         return cv::Mat();
     }
 
-    spdlog::info(
-        "retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight
-    );
+    if constexpr (CameraDebug)
+        spdlog::info(
+            "retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight
+        );
     auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
     MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
     return img;
