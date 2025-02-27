@@ -55,6 +55,15 @@ AutoAim::Classifier::Classifier(const std::string &config_path) {
 }
 
 cv::Mat AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const Armor &armor) {
+    if constexpr (ClassifierDebug)
+        spdlog::info("extracting ROI from armor, performing test");
+
+    if (armor.vertices.size() != 4) {
+        spdlog::error("invalid armor vertices size: {}", armor.vertices.size());
+        exit(-1);
+    } else if constexpr (ClassifierDebug)
+        spdlog::info("armor test passed, extracting ROI");
+
     // 计算数字区域
     cv::Point2f vecLeft = armor.vertices[3] - armor.vertices[0];
     double lenLeft      = cv::norm(armor.vertices[3] - armor.vertices[0]);
@@ -106,7 +115,9 @@ AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const std::v
     return rois;
 }
 
-std::string AutoAim::Classifier::classify(const cv::Mat &roi) {}
+std::string AutoAim::Classifier::classify(cv::Mat &roi) {
+    return inference(roi);
+}
 
 cv::Mat AutoAim::Classifier::softmax(const cv::Mat &src) {
     cv::Mat dst;

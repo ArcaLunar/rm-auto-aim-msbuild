@@ -17,7 +17,7 @@ class Classifier {
     /**
      * @brief 对给定的装甲板数字区域进行分类
      */
-    std::string classify(const cv::Mat &roi);
+    std::string classify(cv::Mat &roi);
 
     /**
      * @brief 从图像里提取装甲板数字区域

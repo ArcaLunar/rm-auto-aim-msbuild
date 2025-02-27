@@ -14,6 +14,7 @@ constexpr bool SerialPortDebug     = false; // set to `false` to disable debug m
 constexpr bool ProducerConsumerModelDebug
     = false; // set to `false` to disable debug messages from producer-consumer model
 constexpr bool DetectorDebug = true;
+constexpr bool ClassifierDebug = true;
 
 //! 赛场参数
 constexpr int ModelInputWidth     = 64;  // 摄像头输入图像宽度
