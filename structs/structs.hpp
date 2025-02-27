@@ -87,6 +87,7 @@ struct RawFrameInfo {
  */
 struct IMUInfo {
     double roll{}, pitch{}, yaw{};
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
 
     void load_from_recvmsg(const VisionPLCRecvMsg &msg);
     cv::Mat rotation() const;
@@ -96,17 +97,24 @@ struct IMUInfo {
 // Detector Related Data Structures
 // ========================================================
 
-struct RawSensorData {
-    RawFrameInfo raw;
-    IMUInfo imu;
-};
-
 namespace AutoAim {
 
 enum class ArmorType {
     None,
     Small,
     Large,
+};
+
+enum class Labels {
+    None,
+    Hero,
+    Engineer,
+    Infantry3,
+    Infantry4,
+    Infantry5,
+    Sentry,
+    Outpost,
+    Base,
 };
 
 /**
@@ -193,8 +201,8 @@ struct Armor {
  *
  */
 struct AnnotatedArmorInfo {
-    std::vector<cv::Point3f> corners;
-    std::string result;
+    AutoAim::Armor armor;
+    AutoAim::Labels result;
     IMUInfo imu_info;
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 };

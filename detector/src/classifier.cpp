@@ -1,5 +1,6 @@
 #include "classifier.hpp"
 #include "config.hpp"
+#include "structs.hpp"
 
 #include <algorithm>
 #include <opencv2/core.hpp>
@@ -115,8 +116,19 @@ AutoAim::Classifier::extract_region_of_interest(const cv::Mat &img, const std::v
     return rois;
 }
 
-std::string AutoAim::Classifier::classify(cv::Mat &roi) {
-    return inference(roi);
+AutoAim::Labels AutoAim::Classifier::classify(cv::Mat &roi) {
+    auto result = inference(roi);
+    switch (result) {
+        case 1: return Labels::Hero;
+        case 2: return Labels::Engineer;
+        case 3: return Labels::Infantry3;
+        case 4: return Labels::Infantry4;
+        case 5: return Labels::Infantry5;
+        case 6: return Labels::Sentry;
+        case 7: return Labels::Outpost;
+        case 8: return Labels::Base;
+        default: return Labels::None;
+    }
 }
 
 cv::Mat AutoAim::Classifier::softmax(const cv::Mat &src) {
@@ -131,7 +143,7 @@ cv::Mat AutoAim::Classifier::softmax(const cv::Mat &src) {
     return dst;
 }
 
-std::string AutoAim::Classifier::inference(cv::Mat &src) {
+int AutoAim::Classifier::inference(cv::Mat &src) {
     preprocess(src); //* 预处理
 
     cv::Mat inputBlob = cv::dnn::blobFromImage(
@@ -148,9 +160,9 @@ std::string AutoAim::Classifier::inference(cv::Mat &src) {
     int classId = classIdPoint.x;
 
     if (confidence > confidence_threshold_)
-        return std::to_string(classIdPoint.x);
+        return classIdPoint.x;
     else
-        return "unknown";
+        return -1;
 }
 
 void AutoAim::Classifier::preprocess(cv::Mat &src) { cv::cvtColor(src, src, cv::COLOR_BGR2GRAY); }

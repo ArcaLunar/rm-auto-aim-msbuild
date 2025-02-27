@@ -17,7 +17,7 @@ class Classifier {
     /**
      * @brief 对给定的装甲板数字区域进行分类
      */
-    std::string classify(cv::Mat &roi);
+    Labels classify(cv::Mat &roi);
 
     /**
      * @brief 从图像里提取装甲板数字区域
@@ -33,7 +33,7 @@ class Classifier {
   private:
     cv::Mat softmax(const cv::Mat &src);
     void preprocess(cv::Mat &src);
-    std::string inference(cv::Mat &src);
+    int inference(cv::Mat &src);
 }; // class Classifier
 
 } // namespace AutoAim

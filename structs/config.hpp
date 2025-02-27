@@ -5,16 +5,17 @@ constexpr double kDegreeToRadian = 0.017453292519943295769236907684886;
 constexpr double kRadianToDegree = 57.295779513082320876798154814105;
 
 //! 调试选项
-constexpr bool DisplayAnnotatedImageDebug = true; // 识别完装甲板后是否显示标注装甲板的图像
-constexpr bool SuppressValidationDebug    = true; // 抑制 armor.cpp 里的 spdlog 输出（减少日志数量）
+constexpr bool SuppressValidationDebug = true; // 抑制 armor.cpp 里的 spdlog 输出（减少日志数量）
 
-constexpr bool InitializationDebug = true;  // set to `false` to disable debug messages for initialization
-constexpr bool CameraDebug         = false; // set to `false` to disable debug messages from camera capture
-constexpr bool SerialPortDebug     = false; // set to `false` to disable debug messages from serial port
-constexpr bool ProducerConsumerModelDebug
-    = false; // set to `false` to disable debug messages from producer-consumer model
-constexpr bool DetectorDebug = true;
-constexpr bool ClassifierDebug = true;
+constexpr bool InitializationDebug        = true;  // set to `false` to disable debug messages for initialization
+constexpr bool CameraDebug                = false; // set to `false` to disable debug messages from camera capture
+constexpr bool SerialPortDebug            = false; // set to `false` to disable debug messages from serial port
+constexpr bool ProducerConsumerModelDebug = false; // set to `false` to disable messages from work_queue.hpp
+constexpr bool DetectorDebug              = false;
+constexpr bool ClassifierDebug            = false;
+constexpr bool PublisherDebug             = true;
+constexpr bool DisplayAnnotatedImageDebug = true; // 识别完装甲板后是否显示标注装甲板的图像
+constexpr bool PublisherDiaplayImageDebug = false;
 
 //! 赛场参数
 constexpr int ModelInputWidth     = 64;  // 摄像头输入图像宽度

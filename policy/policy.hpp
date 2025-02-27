@@ -10,10 +10,11 @@
 #define __POLICY_HPP__
 
 #include "structs.hpp"
+#include <vector>
 
 class PolicySelector {
   public:
-    void relabel(AutoAim::Armor &armor);
+    void relabel(std::vector<AutoAim::Armor> &armor);
     void select();
 
   protected:
