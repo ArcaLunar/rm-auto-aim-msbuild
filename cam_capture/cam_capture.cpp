@@ -13,10 +13,15 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include <spdlog/spdlog.h>
 #include <toml++/toml.hpp>
 
 HikCamera::HikCamera(const std::string &config_path) {
+    this->log_ = spdlog::stdout_color_mt("HikCamera");
+    this->log_->set_level(spdlog::level::trace);
+    this->log_->set_pattern("[%H:%M:%S, +%oms] [%^%l%$] [%s:%# in %!] %v");
+
     // 初始化 SDK
     MV_CC_Initialize();
     // 枚举设备
@@ -34,97 +39,97 @@ HikCamera::HikCamera(const std::string &config_path) {
 }
 
 HikCamera::~HikCamera() {
-    spdlog::info("exiting......");
+    SPDLOG_LOGGER_INFO(this->log_, "exiting......");
     // 停止捕获图像
-    spdlog::info("stop retrieving image");
+    SPDLOG_LOGGER_INFO(this->log_, "stop retrieving image");
     int result = MV_CC_StopGrabbing(this->handle_);
     if (result != MV_OK)
-        spdlog::critical("error stopping");
-    spdlog::info("stop succeed");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "error stopping");
+    SPDLOG_LOGGER_INFO(this->log_, "stop succeed");
 
     // 关闭相机
-    spdlog::info("closing camera");
+    SPDLOG_LOGGER_INFO(this->log_, "closing camera");
     result = MV_CC_CloseDevice(this->handle_);
     if (result != MV_OK)
-        spdlog::critical("error closing");
-    spdlog::info("close succeed");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "error closing");
+    SPDLOG_LOGGER_INFO(this->log_, "close succeed");
 
     // 销毁句柄
-    spdlog::info("destroying handle");
+    SPDLOG_LOGGER_INFO(this->log_, "destroying handle");
     result = MV_CC_DestroyHandle(this->handle_);
     if (result != MV_OK)
-        spdlog::critical("error destroying");
-    spdlog::info("destroy succeed");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "error destroying");
+    SPDLOG_LOGGER_INFO(this->log_, "destroy succeed");
 
     // 释放 SDK
     MV_CC_Finalize();
-    spdlog::info("exit successfully");
+    SPDLOG_LOGGER_INFO(this->log_, "exit successfully");
 }
 
 void HikCamera::enum_devices() {
     // 枚举相机设备
-    spdlog::info("retriving available cam list ...");
+    SPDLOG_LOGGER_INFO(this->log_, "retriving available cam list ...");
     std::memset(&this->devicelist_, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
     int nResult = MV_CC_EnumDevices(MV_GIGE_DEVICE | MV_USB_DEVICE, &this->devicelist_);
     if (nResult != MV_OK) {
-        spdlog::critical("retrieving fails.");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "retrieving fails.");
         exit(-1);
     }
-    spdlog::info("retrieving succeed");
+    SPDLOG_LOGGER_INFO(this->log_, "retrieving succeed");
 }
 
 void HikCamera::debug_devices() {
     // 相机的设备 ID
-    spdlog::info("finding Hik Camera");
+    SPDLOG_LOGGER_INFO(this->log_, "finding Hik Camera");
     if (devicelist_.nDeviceNum == 0) {
-        spdlog::critical("no device found.");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "no device found.");
         exit(-1);
     }
     for (int i = 0, n = devicelist_.nDeviceNum; i < n; i++) {
         MV_CC_DEVICE_INFO *pDeviceInfo = devicelist_.pDeviceInfo[i];
-        spdlog::info("checking device {}", i);
+        SPDLOG_LOGGER_INFO(this->log_, "checking device {}", i);
         if (pDeviceInfo == nullptr)
             break;
         this->print_device_info(pDeviceInfo);
         camIndex = i;
     }
-    spdlog::info("finding succeed");
+    SPDLOG_LOGGER_INFO(this->log_, "finding succeed");
 }
 
 void HikCamera::print_device_info(MV_CC_DEVICE_INFO *pDeviceInfo) {
     if (pDeviceInfo == nullptr) { // 设备不存在
-        spdlog::critical("device info pointer is null.");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "device info pointer is null.");
         exit(-1);
     }
 
     if (pDeviceInfo->nTLayerType == MV_USB_DEVICE) { // USB 相机
-        spdlog::info("device type: USB");
+        SPDLOG_LOGGER_INFO(this->log_, "device type: USB");
     } else if (pDeviceInfo->nTLayerType == MV_GIGE_DEVICE) {
-        spdlog::info("device type: GIGE");
+        SPDLOG_LOGGER_INFO(this->log_, "device type: GIGE");
     } else {
-        spdlog::error("unknown device type, cannot continue");
+        SPDLOG_LOGGER_ERROR(this->log_, "unknown device type, cannot continue");
         exit(-1);
     }
 }
 
 void HikCamera::create_handle() {
-    spdlog::info("creating handle_ for camera {}", this->camIndex);
+    SPDLOG_LOGGER_INFO(this->log_, "creating handle_ for camera {}", this->camIndex);
     int result = MV_CC_CreateHandle(&this->handle_, devicelist_.pDeviceInfo[camIndex]);
     if (result != MV_OK) {
-        spdlog::critical("critical creating handle_");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "critical creating handle_");
         exit(-1);
     }
-    spdlog::info("create success");
+    SPDLOG_LOGGER_INFO(this->log_, "create success");
 }
 
 void HikCamera::open_camera() {
-    spdlog::info("opening camera");
+    SPDLOG_LOGGER_INFO(this->log_, "opening camera");
     int result = MV_CC_OpenDevice(this->handle_);
     if (result != MV_OK) {
-        spdlog::critical("open camera fails");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "open camera fails");
         exit(-1);
     }
-    spdlog::info("open succeed");
+    SPDLOG_LOGGER_INFO(this->log_, "open succeed");
 }
 
 cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRAME_OUT *pstImage) {
@@ -143,7 +148,7 @@ cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRA
         channel_type   = CV_8UC1;
         transform_type = cv::COLOR_BayerGB2RGB;
     } else
-        spdlog::error("unsupported pixel format");
+        SPDLOG_LOGGER_ERROR(this->log_, "unsupported pixel format");
 
     cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, channel_type, pstImage->pBufAddr);
     if (transform_type == cv::COLOR_BGR2GRAY)
@@ -156,7 +161,7 @@ cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRA
 
 CameraConfig HikCamera::load_config(const std::string &config_path) {
     // ! 打开配置文件
-    spdlog::info("reading from .config");
+    SPDLOG_LOGGER_INFO(this->log_, "reading from .config");
 
     toml::table T;
     struct CameraConfig config;
@@ -172,7 +177,7 @@ CameraConfig HikCamera::load_config(const std::string &config_path) {
         config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
         config.gamma            = T["gamma"].value_or(0.5);
     } catch (const toml::parse_error &e) {
-        spdlog::error("error parsing config file: {}, using fallback", e.what());
+        SPDLOG_LOGGER_ERROR(this->log_, "error parsing config file: {}, using fallback", e.what());
     }
 
     return config;
@@ -183,9 +188,9 @@ void HikCamera::setup(const std::string &config_path) {
 
 #define SET_PARAM(func, value, item)                                                                                   \
     if (MV_CC_Set##func(this->handle_, item, value) != MV_OK)                                                          \
-        spdlog::critical("setting {} to {} failed", item, value);                                                      \
+        SPDLOG_LOGGER_CRITICAL(this->log_, "setting {} to {} failed", item, value);                                                  \
     else                                                                                                               \
-        spdlog::info("setting {} to {} succeeded.", item, value);
+        SPDLOG_LOGGER_INFO(this->log_, "setting {} to {} succeeded.", item, value);
 
     //* Pixel Format
     // if (config.pixel_format == "BayerRG8") {
@@ -195,7 +200,7 @@ void HikCamera::setup(const std::string &config_path) {
     // } else if (config.pixel_format == "BGR8") {
     //     SET_PARAM(EnumValue, PixelType_Gvsp_BGR8_Packed, "PixelFormat");
     // } else {
-    //     spdlog::critical("unsupported pixel format");
+    //     SPDLOG_LOGGER_CRITICAL(this->log_, "unsupported pixel format");
     //     exit(-1);
     // }
     //* Trigger mode
@@ -219,25 +224,25 @@ void HikCamera::setup(const std::string &config_path) {
 }
 
 void HikCamera::initialize_image_retrieval() {
-    spdlog::info("initializing image retrieving");
+    SPDLOG_LOGGER_INFO(this->log_, "initializing image retrieving");
     int result = MV_CC_StartGrabbing(this->handle_);
     if (result != MV_OK) {
-        spdlog::critical("initialization fails");
+        SPDLOG_LOGGER_CRITICAL(this->log_, "initialization fails");
         exit(-1);
     }
-    spdlog::info("initialization succeed");
+    SPDLOG_LOGGER_INFO(this->log_, "initialization succeed");
 }
 
 cv::Mat HikCamera::__get_frame() {
     std::memset(&this->buffer_, 0, sizeof(MV_FRAME_OUT));
     int n_ret = MV_CC_GetImageBuffer(this->handle_, &this->buffer_, 1000);
     if (n_ret != MV_OK) {
-        spdlog::error("failed to get image buffer, no data");
+        SPDLOG_LOGGER_ERROR(this->log_, "failed to get image buffer, no data");
         return cv::Mat();
     }
 
     if constexpr (CameraDebug)
-        spdlog::info(
+        SPDLOG_LOGGER_INFO(this->log_, 
             "retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight
         );
     auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);

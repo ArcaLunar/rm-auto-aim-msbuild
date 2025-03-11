@@ -1,6 +1,8 @@
 #ifndef __CAM_CAPTURE_HPP__
 #define __CAM_CAPTURE_HPP__
 
+#include <memory>
+#include <spdlog/logger.h>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include "CameraParams.h"
@@ -83,6 +85,7 @@ class HikCamera {
 
     /// \brief 获取一帧图像 (`cv::Mat`)
     cv::Mat __get_frame();
+
   protected:
     /// \brief 设备列表
     MV_CC_DEVICE_INFO_LIST devicelist_;
@@ -90,6 +93,7 @@ class HikCamera {
     void *handle_;
     CameraConfig config_;
     MV_FRAME_OUT buffer_;
+    std::shared_ptr<spdlog::logger> log_;
 
   public:
     HikCamera(const std::string &config_file);
@@ -97,7 +101,7 @@ class HikCamera {
     /// \brief 获取相机的处理 agent
     void *get_handle() { return handle_; }
     /// \brief （辅助函数）将捕获的图像转换为 OpenCV 矩阵
-    static cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
+    cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
 
     /**
      * @brief 获取一帧 BGR 图像，打上时间戳
