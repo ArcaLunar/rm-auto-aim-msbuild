@@ -1,6 +1,8 @@
 #ifndef __CAM_CAPTURE_HPP__
 #define __CAM_CAPTURE_HPP__
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "CameraParams.h"
 #include "structs.hpp"
 

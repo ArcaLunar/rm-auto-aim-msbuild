@@ -1,6 +1,8 @@
 #ifndef __TRANSFORM_HPP__
 #define __TRANSFORM_HPP__
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <map>

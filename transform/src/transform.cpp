@@ -1,6 +1,8 @@
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
+#include "transform.hpp"
 #include "config.hpp"
 #include "structs.hpp"
-#include "transform.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -44,8 +46,10 @@ cv::Mat HerkulesTransform::Functions::get_homography_matrix_from_rotation_transl
     CV_Assert(translation.total() == 3);                       // t_vec
 
     cv::Mat R; // 3x3 rotation matrix
-    if (rotation.total() == 3) cv::Rodrigues(rotation, R);
-    else R = rotation;
+    if (rotation.total() == 3)
+        cv::Rodrigues(rotation, R);
+    else
+        R = rotation;
 
     cv::Mat H{cv::Mat::eye(4, 4, R.type())}; // homography matrix
     R.copyTo(H(cv::Rect(0, 0, 3, 3)));
@@ -61,9 +65,10 @@ std::pair<cv::Mat, cv::Mat> HerkulesTransform::Functions::get_rotation_translati
     CV_Assert(homography.total() == 16);
 
     cv::Mat R{homography(cv::Rect(0, 0, 3, 3)).clone()};
-    cv::Mat t{homography(cv::Rect(3, 0, 1, 3)).clone()};
+    cv::Mat t{homography(cv::Rect(3, 0, 1, 3)).clone() / homography.at<double>(3, 3)};
 
-    if (return_rvec) cv::Rodrigues(R, R);
+    if (return_rvec)
+        cv::Rodrigues(R, R);
 
     return {R, t};
 }
@@ -112,7 +117,7 @@ cv::Mat HerkulesTransform::Functions::get_translation_vector(const double &dx, c
 }
 
 cv::Mat HerkulesTransform::Functions::get_rotation_matrix(const double &rx, const double &ry, const double &rz) {
-    return rotate_around_x(rx) * rotate_around_y(ry) * rotate_around_z(rz);
+    return rotate_around_x(rz) * rotate_around_y(ry) * rotate_around_z(rx);
 }
 
 // ========================================================
@@ -157,10 +162,12 @@ HerkulesTransform::CoordinateManager::extract_tf_matrix(const std::string &from,
     while (!q.empty()) {
         int u = q.front();
         q.pop();
-        if (vis[u]) continue;
+        if (vis[u])
+            continue;
         vis[u] = 1;
         for (auto &[v, id] : G_[u]) {
-            if (vis[v]) continue;
+            if (vis[v])
+                continue;
             tf_res[v] = tf_res[u] * std::get<2>(edges_[id]);
             q.push(v);
         }

@@ -10,15 +10,25 @@
 #define __POLICY_HPP__
 
 #include "structs.hpp"
+
+#include <map>
+#include <semaphore>
 #include <vector>
 
-class PolicySelector {
+class SelectingPolicy {
   public:
-    void relabel(std::vector<AutoAim::Armor> &armor);
-    void select();
+    /**
+     * @brief 根据当前帧的装甲板信息，选择一个装甲板作为目标
+     *
+     * @param armors
+     */
+    void select_and_release(const std::vector<AnnotatedArmorInfo> &armors);
+    void grant_fire_permission(const AutoAim::Labels &label);
+    void revoke_fire_permission(const AutoAim::Labels &label);
 
   protected:
-    AutoAim::Armor previous_;
+    AnnotatedArmorInfo previous_;
+    std::map<AutoAim::Labels, std::binary_semaphore> fire_sem_;
 };
 
 #endif // __POLICY_HPP__

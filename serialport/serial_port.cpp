@@ -1,3 +1,5 @@
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "serial_port.hpp"
 #include "config.hpp"
 #include "structs.hpp"

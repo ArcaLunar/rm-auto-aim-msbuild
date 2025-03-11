@@ -16,6 +16,12 @@ spdlog = dependency('spdlog')
 opencv = dependency('opencv4')
 eigen = dependency('eigen3')
 toml = dependency('tomlplusplus')
+boost = dependency(
+    'boost',
+    modules: [
+        'system',
+    ],
+)
 
 mvs = subproject('mvs')
 mvs_dep = mvs.get_variable('mvs_dep')
@@ -27,6 +33,7 @@ all_dep = [
     opencv,
     eigen,
     mvs_dep,
+    boost,
     toml,
     tf_dep,
 ]

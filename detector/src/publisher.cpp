@@ -1,3 +1,5 @@
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "publisher.hpp"
 #include "config.hpp"
 #include "structs.hpp"
