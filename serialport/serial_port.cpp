@@ -9,6 +9,7 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <thread>
@@ -21,7 +22,11 @@ SerialPort::SerialPort(const std::string &config_path)
       last_recv_(std::chrono::steady_clock::now()),
       recv_buffer_(kRecvMsgCount) {
     try {
-        spdlog::info("serial_port: reading config from {}", config_path);
+        this->log_ = spdlog::stdout_color_mt("serial_port");
+        this->log_->set_level(spdlog::level::trace);
+        this->log_->set_pattern("[%H:%M:%S, +%4oms] [%15s:%3# in %!] [%^%l%$] %v");
+
+        SPDLOG_LOGGER_INFO(this->log_, "serial_port: reading config from {}", config_path);
         toml::table T = toml::parse_file(config_path);
 
         [&]() { // retrieve candidate port names
@@ -36,22 +41,27 @@ SerialPort::SerialPort(const std::string &config_path)
             cfg_.port_name = alt_ports_[0];
 
             if constexpr (SerialPortDebug)
-                spdlog::info("serial_port: alternative ports = {}", ss.str());
+                SPDLOG_LOGGER_INFO(this->log_, "serial_port: alternative ports = {}", ss.str());
         }();
     } catch (std::exception &err) {
-        spdlog::error("serial_port: error reading config: {}, using fallback", err.what());
+        SPDLOG_LOGGER_ERROR(this->log_, "serial_port: error reading config: {}, using fallback", err.what());
     }
 }
+
+// SerialPort::~SerialPort() {
+//     SPDLOG_LOGGER_INFO(this->log_, "serial_port: exiting......");
+//     close_port();
+// }
 
 void SerialPort::initialize_port() {
     try {
         this->port_ = std::make_unique<boost::asio::serial_port>(this->io_service_, this->cfg_.port_name);
-        spdlog::info("port {} opened successfully", this->cfg_.port_name);
+        SPDLOG_LOGGER_INFO(this->log_, "port {} opened successfully", this->cfg_.port_name);
         this->__set_options();
         this->port_ok = true;
-        spdlog::info("port options set successfully");
+        SPDLOG_LOGGER_INFO(this->log_, "port options set successfully");
     } catch (std::exception &err) {
-        spdlog::error("port init error: {}", err.what());
+        SPDLOG_LOGGER_ERROR(this->log_, "port init error: {}", err.what());
         exit(-1);
     }
 }
@@ -59,7 +69,7 @@ void SerialPort::initialize_port() {
 void SerialPort::close_port() {
     if (this->port_->is_open()) {
         this->port_->close();
-        spdlog::info("port closed");
+        SPDLOG_LOGGER_INFO(this->log_, "port closed");
     }
 }
 
@@ -88,7 +98,7 @@ bool SerialPort::send_data(const VisionPLCSendMsg &msg) {
     updated_                      = 1 - updated_; // set the updated flag
     msg_to_send.flag_have_updated = updated_;
     if constexpr (SerialPortDebug)
-        spdlog::info("sending data");
+        SPDLOG_LOGGER_INFO(this->log_, "sending data");
     memset(send_frame_buffer_, 0, kSendBufSize);
     memcpy(send_frame_buffer_, &msg_to_send, kSendBufSize); // copy the data to the buffer
 
@@ -98,7 +108,7 @@ bool SerialPort::send_data(const VisionPLCSendMsg &msg) {
             = boost::asio::write(*this->port_, boost::asio::buffer(send_frame_buffer_, kSendBufSize));
         return size_of_data_sent == kSendBufSize;
     } catch (const std::exception &err) {
-        spdlog::error("serial_port.send_data() error: {}", err.what());
+        SPDLOG_LOGGER_ERROR(this->log_, "serial_port.send_data() error: {}", err.what());
         return false;
     }
 }
@@ -115,10 +125,12 @@ void SerialPort::read_raw_data_from_port() {
             if (size_of_data_read == kRecvMsgSize)
                 this->recv_buffer_.push(data);
             else if constexpr (SerialPortDebug)
-                spdlog::warn("serial_port.read_raw_data_from_port() warning: read size mismatch, ignoring");
+                SPDLOG_LOGGER_WARN(
+                    this->log_, "serial_port.read_raw_data_from_port() warning: read size mismatch, ignoring"
+                );
         }
     } catch (const std::exception &err) {
-        spdlog::error("serial_port.read_raw_data_from_port() error: {}", err.what());
+        SPDLOG_LOGGER_ERROR(this->log_, "serial_port.read_raw_data_from_port() error: {}", err.what());
         exit(-1);
     }
 }
@@ -134,7 +146,7 @@ void SerialPort::process_raw_data_from_buffer() {
             continue; // wait for data
 
         if constexpr (SerialPortDebug)
-            spdlog::info("data received from port buffer");
+            SPDLOG_LOGGER_INFO(this->log_, "data received from port buffer");
 
         buffer = data_opt.value();
         for (size_t i = 0, n = buffer.size(); i < n;) { // Process raw data to msg data structure
@@ -145,7 +157,7 @@ void SerialPort::process_raw_data_from_buffer() {
             //* frame verification
             if (!this->__verify_frame<VisionPLCRecvMsg>(buffer, i, j)) {
                 // invalid frame, skip
-                spdlog::warn("invalid frame, skip");
+                SPDLOG_LOGGER_WARN(this->log_, "invalid frame, skip");
                 ++i;
                 continue;
             }
@@ -154,7 +166,7 @@ void SerialPort::process_raw_data_from_buffer() {
             data_recv_buffer_.push(data);
             i = j;
             if constexpr (SerialPortDebug)
-                spdlog::info("data processed from bits to float");
+                SPDLOG_LOGGER_INFO(this->log_, "data processed from bits to float");
         }
     }
 }
@@ -162,7 +174,8 @@ void SerialPort::process_raw_data_from_buffer() {
 template <typename MsgProtocol>
 bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t begin, size_t end) {
     if constexpr (SerialPortDebug)
-        spdlog::info(
+        SPDLOG_LOGGER_INFO(
+            this->log_,
             "buffer[0]={:x}, buffer[1]={:x}, buffer[2]={:x}, buffer[3]={:x} buffer[4]={:x} buffer[5]={:x} "
             "buffer[6]={:x} "
             "buffer[7]={:x} "
@@ -191,27 +204,29 @@ bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t 
 
     if (end - begin != sizeof(MsgProtocol)) {
         if constexpr (SerialPortDebug)
-            spdlog::error("invalid range size: begin={} end={}", begin, end);
+            SPDLOG_LOGGER_ERROR(this->log_, "invalid range size: begin={} end={}", begin, end);
         return false;
     } // 下标标记的 buffer 大小不对
     else if (buffer.size() < sizeof(MsgProtocol)) {
         if constexpr (SerialPortDebug)
-            spdlog::error("buffer size {} too small", buffer.size());
+            SPDLOG_LOGGER_ERROR(this->log_, "buffer size {} too small", buffer.size());
         return false;
     } // buffer 太小
     else if (begin < 0 || end < 0) {
         if constexpr (SerialPortDebug)
-            spdlog::error("invalid range: begin={} end={}", begin, end);
+            SPDLOG_LOGGER_ERROR(this->log_, "invalid range: begin={} end={}", begin, end);
         return false;
     } // 下标为负数
     else if (end > buffer.size() || begin > buffer.size()) {
         if constexpr (SerialPortDebug)
-            spdlog::error("invalid range: begin={} end={} buffer_size={}", begin, end, buffer.size());
+            SPDLOG_LOGGER_ERROR(this->log_, "invalid range: begin={} end={} buffer_size={}", begin, end, buffer.size());
         return false;
     } // 下标超出范围
     else if (buffer[begin] != kProtocolRecvHead || buffer[end - 1] != kProtocolTail) {
         if constexpr (SerialPortDebug)
-            spdlog::error("invalid head or tail: begin={:x} end={:x}", buffer[begin], buffer[end - 1]);
+            SPDLOG_LOGGER_ERROR(
+                this->log_, "invalid head or tail: begin={:x} end={:x}", buffer[begin], buffer[end - 1]
+            );
         return false;
     } // 首尾不对
     else
@@ -231,7 +246,7 @@ void SerialPort::check_port_and_auto_reconnect() {
 
         if (duration.count() < kTimeout)
             continue; // 未超时
-        spdlog::error("serial_port error: port timeout, reconnecting");
+        SPDLOG_LOGGER_ERROR(this->log_, "serial_port error: port timeout, reconnecting");
 
         while (true) {
             // test at 1Hz
@@ -250,10 +265,10 @@ void SerialPort::check_port_and_auto_reconnect() {
                 initialize_port();
                 if (!port_ok)
                     throw std::runtime_error(cfg_.port_name + " port not ok");
-                spdlog::info("port reconnected successfully");
+                SPDLOG_LOGGER_INFO(this->log_, "port reconnected successfully");
                 break;
             } catch (const std::exception &err) {
-                spdlog::error("port reconnect error: {}", err.what());
+                SPDLOG_LOGGER_ERROR(this->log_, "port reconnect error: {}", err.what());
             }
         }
     }

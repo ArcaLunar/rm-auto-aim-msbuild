@@ -40,6 +40,11 @@ class CircularBuffer {
         full_ = head_ == tail_;
     }
 
+    /**
+     * @brief Retrieve the first element from the buffer and remove it.
+     * 
+     * @return std::optional<T> 
+     */
     std::optional<T> pop() {
         std::lock_guard<std::mutex> lock(mutex_);
         if (is_empty())
@@ -48,6 +53,18 @@ class CircularBuffer {
         full_    = false;
         tail_    = (tail_ + 1) % max_size_;
         return std::make_optional(std::move(result));
+    }
+
+    /**
+     * @brief Have a check at the first element inside the buffer.
+     * 
+     * @return std::optional<const T &> 
+     */
+    std::optional<const T &> front() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (is_empty())
+            return std::nullopt;
+        return std::make_optional(buffer_[tail_]);
     }
 
     void reset() {

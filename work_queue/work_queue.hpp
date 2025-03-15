@@ -6,6 +6,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <pthread.h>
 #include <semaphore>
 #include <spdlog/spdlog.h>
@@ -100,6 +101,25 @@ class DataTransmitter {
     std::vector<std::thread> consumer_threads_;
 
   private:
+};
+
+/**
+ * @brief Wrapper Class of circular buffer. Just for more specific usage.
+ a
+ * @tparam DataType
+ * @tparam BufferSize
+ */
+template <typename DataType, int BufferSize = 1024>
+class SyncQueue {
+  private:
+    CircularBuffer<DataType> buffer_{BufferSize};
+
+  public:
+    void write_data(const DataType &data) { buffer_.push(data); }
+    auto read_data() { return std::forward<std::optional<const DataType &>>(buffer_.front()); }
+    std::optional<DataType> pop_data() { return buffer_.pop(); }
+    bool is_empty() { return buffer_.empty(); }
+    bool is_full() { return buffer_.full(); }
 };
 
 #endif

@@ -6,7 +6,9 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <chrono>
+#include <memory>
 #include <optional>
+#include <spdlog/logger.h>
 
 constexpr size_t kSendBufSize  = sizeof(VisionPLCSendMsg);
 constexpr size_t kRecvMsgSize  = sizeof(VisionPLCRecvMsg);
@@ -76,7 +78,7 @@ class SerialPort {
     std::unique_ptr<boost::asio::serial_port> port_; // 串口
     size_t port_index_{0};                           // 端口索引
     std::string port_name_;
-    std::vector<std::string> alt_ports_;             // 备选端口
+    std::vector<std::string> alt_ports_; // 备选端口
 
     SerialPortConfiguration cfg_; // 串口配置
     bool port_ok;                 // 串口是否正常
@@ -87,6 +89,8 @@ class SerialPort {
     uint8_t send_frame_buffer_[kSendBufSize]; // 发送缓冲区，每个 byte 一个 index
     CircularBuffer<RecvMsgBuffer> recv_buffer_;
     CircularBuffer<VisionPLCRecvMsg> data_recv_buffer_;
+
+    std::shared_ptr<spdlog::logger> log_;
 
   private:
     void __set_options();

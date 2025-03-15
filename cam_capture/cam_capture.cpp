@@ -20,7 +20,7 @@
 HikCamera::HikCamera(const std::string &config_path) {
     this->log_ = spdlog::stdout_color_mt("HikCamera");
     this->log_->set_level(spdlog::level::trace);
-    this->log_->set_pattern("[%H:%M:%S, +%oms] [%^%l%$] [%s:%# in %!] %v");
+    this->log_->set_pattern("[%H:%M:%S, +%4oms] [%15s:%3# in %!] [%^%l%$] %v");
 
     // 初始化 SDK
     MV_CC_Initialize();
