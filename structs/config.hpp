@@ -21,6 +21,8 @@ constexpr bool PublisherDebug  = true && EnableAllDebug;
 constexpr bool DisplayAnnotatedImageDebug = true && EnableAllDebug; // 识别完装甲板后是否显示标注装甲板的图像
 constexpr bool PublisherDiaplayImageDebug = false && EnableAllDebug;
 
+constexpr bool AnnotateImageBenchmark = true; 
+
 //! 赛场参数
 constexpr int ModelInputWidth     = 64;  // 摄像头输入图像宽度
 constexpr int ModelInputHeight    = 64;  // 摄像头输入图像高度

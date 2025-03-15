@@ -1,14 +1,14 @@
-#include "publisher.hpp"
-#include <memory>
+#include "config.hpp"
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/exception/exception.hpp>
 #include <exception>
+#include <memory>
 #include <spdlog/spdlog.h>
 
 #include "cam_capture.hpp"
-#include "detector.hpp"
+#include "publisher.hpp"
 #include "serial_port.hpp"
 #include "structs.hpp"
 #include "work_queue.hpp"
@@ -36,13 +36,59 @@ int main() {
         // 3. "armors(3D) => forward to corresponding tracker"
         // 4. "armors(3D) => forward to filtering Policy"
 
-        auto to_annotate = std::make_shared<SyncQueue<RawFrameInfo>>(); // 1.
+        // auto to_annotate = std::make_shared<SyncQueue<RawFrameInfo>>(); // 1.
+        auto to_filter = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.
         // producer (1): raw image from camera
         std::thread annotate_img([&]() {
+            RawFrameInfo raw_frame;
+
+            auto time          = std::chrono::system_clock::now();
+            auto msg_grep_time = std::chrono::system_clock::now();
+            auto annotate_time = std::chrono::system_clock::now();
+
+            IMUInfo imu_info;
             while (true) {
+                using namespace std::chrono;
+                raw_frame = cam->get_frame();
+                time      = system_clock::now();
+
+                //* get correct recv msg
+                auto recv_msg = port->get_data();
+                for (auto duration = time - recv_msg->timestamp; duration > milliseconds(10);
+                     recv_msg      = port->get_data())
+                    duration = time - recv_msg->timestamp;
+                if constexpr (AnnotateImageBenchmark) {
+                    msg_grep_time = system_clock::now();
+                    spdlog::info("Get msg consumes {} ms", duration_cast<milliseconds>(msg_grep_time - time).count());
+                }
+
+                //* annotate
+                imu_info.load_from_recvmsg(*recv_msg);
+                auto armor_info = detector->annotate_image(raw_frame, imu_info);
+                if constexpr (AnnotateImageBenchmark) {
+                    annotate_time = system_clock::now();
+                    spdlog::info(
+                        "Annotate image consumes {} ms",
+                        duration_cast<milliseconds>(annotate_time - msg_grep_time).count()
+                    );
+                }
+
+                //* push to next queue
+                for (auto &info : armor_info)
+                    to_filter->write_data(info);
+
+                //* Benchmark test
+                if constexpr (AnnotateImageBenchmark) {
+                    auto end_time = system_clock::now();
+                    spdlog::info(
+                        "annotating and passing (in total) consumes {} ms",
+                        duration_cast<milliseconds>(end_time - time).count()
+                    );
+                }
             }
         });
-        auto to_filter = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.
+
+        annotate_img.join();
 
     } catch (std::exception &E) {
         spdlog::critical("{}", E.what());

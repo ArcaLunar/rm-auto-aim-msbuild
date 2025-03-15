@@ -101,7 +101,7 @@ struct IMUInfo {
     double roll{}, pitch{}, yaw{};
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 
-    void load_from_recvmsg(const VisionPLCRecvMsg &msg);
+    void load_from_recvmsg(const StampedRecvMsg &msg);
     cv::Mat rotation() const;
 };
 

@@ -16,10 +16,11 @@
 // Implement for IMU pose
 // ========================================================
 
-void IMUInfo::load_from_recvmsg(const VisionPLCRecvMsg &msg) {
-    roll  = msg.imu_roll;
-    pitch = msg.imu_pitch;
-    yaw   = msg.imu_yaw;
+void IMUInfo::load_from_recvmsg(const StampedRecvMsg &msg) {
+    roll      = msg.msg.imu_roll;
+    pitch     = msg.msg.imu_pitch;
+    yaw       = msg.msg.imu_yaw;
+    timestamp = msg.timestamp;
 }
 
 cv::Mat IMUInfo::rotation() const {

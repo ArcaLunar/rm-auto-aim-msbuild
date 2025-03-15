@@ -3,7 +3,6 @@
 
 #include "circular_buffer.hpp"
 #include "structs.hpp"
-#include <array>
 #include <boost/asio.hpp>
 #include <chrono>
 #include <memory>
