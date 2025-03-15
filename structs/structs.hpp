@@ -8,6 +8,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 #include <opencv2/core.hpp>
 #include <opencv2/core/matx.hpp>
 
@@ -17,6 +18,12 @@
 constexpr int kProtocolSendHead = 0xA3;
 constexpr int kProtocolRecvHead = 0x3A;
 constexpr int kProtocolTail     = 0xAA;
+
+template <size_t MessageSize>
+struct RawMessage {
+    std::array<uint8_t, MessageSize> data;
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
+};
 
 #pragma pack(push, 1)
 struct VisionPLCSendMsg {
@@ -56,20 +63,7 @@ struct VisionPLCRecvMsg {
 
 struct StampedRecvMsg {
     std::chrono::time_point<std::chrono::system_clock> timestamp;
-
-    float roll{}, pitch{}, yaw{};
-    struct {
-        uint8_t hero : 1;
-        uint8_t engineer : 1;
-        uint8_t infantry_3 : 1;
-        uint8_t infantry_4 : 1;
-        uint8_t infantry_5 : 1;
-        uint8_t sentry : 1;
-        uint8_t outpost : 1;
-        uint8_t base : 1;
-    } shoot_decision{};
-    uint8_t my_color{};
-    uint8_t aim_mode{};
+    VisionPLCRecvMsg msg;
 };
 
 struct SerialPortConfiguration {

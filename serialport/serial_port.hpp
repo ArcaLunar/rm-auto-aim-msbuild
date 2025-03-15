@@ -16,7 +16,7 @@ constexpr size_t kRecvMsgCount = 20; // buffer of 10 messages
 constexpr long long kTimeout   = 1000;
 
 class SerialPort {
-    using RecvMsgBuffer = std::array<uint8_t, kRecvMsgSize>; // each byte = 1 index
+    using RecvMsgBuffer = RawMessage<kRecvMsgSize>; // each byte = 1 index
 
   public:
     /**
@@ -71,7 +71,7 @@ class SerialPort {
     /**
      * @brief 获取消息缓存里第一个数据
      */
-    std::optional<VisionPLCRecvMsg> get_data();
+    std::optional<StampedRecvMsg> get_data();
 
   protected:
     boost::asio::io_service io_service_;             // io_service
@@ -88,7 +88,7 @@ class SerialPort {
 
     uint8_t send_frame_buffer_[kSendBufSize]; // 发送缓冲区，每个 byte 一个 index
     CircularBuffer<RecvMsgBuffer> recv_buffer_;
-    CircularBuffer<VisionPLCRecvMsg> data_recv_buffer_;
+    CircularBuffer<StampedRecvMsg> data_recv_buffer_;
 
     std::shared_ptr<spdlog::logger> log_;
 

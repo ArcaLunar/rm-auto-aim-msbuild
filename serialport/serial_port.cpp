@@ -114,16 +114,20 @@ bool SerialPort::send_data(const VisionPLCSendMsg &msg) {
 }
 
 void SerialPort::read_raw_data_from_port() {
-    SerialPort::RecvMsgBuffer data;
+    RawMessage<kRecvMsgSize> tmp_data;
+
     try {
         while (true) {
-            data.fill(1);
+            tmp_data.data.fill(1);
+            tmp_data.timestamp = std::chrono::system_clock::now();
             if (!this->port_ok)
                 continue;
 
-            auto size_of_data_read = boost::asio::read(*this->port_, boost::asio::buffer(data.data(), data.size()));
+            auto size_of_data_read
+                = boost::asio::read(*this->port_, boost::asio::buffer(tmp_data.data.data(), tmp_data.data.size()));
+
             if (size_of_data_read == kRecvMsgSize)
-                this->recv_buffer_.push(data);
+                this->recv_buffer_.push(tmp_data);
             else if constexpr (SerialPortDebug)
                 SPDLOG_LOGGER_WARN(
                     this->log_, "serial_port.read_raw_data_from_port() warning: read size mismatch, ignoring"
@@ -136,9 +140,10 @@ void SerialPort::read_raw_data_from_port() {
 }
 
 void SerialPort::process_raw_data_from_buffer() {
-    VisionPLCRecvMsg data;
+    // VisionPLCRecvMsg data;
     SerialPort::RecvMsgBuffer buffer;
-    buffer.fill(0);
+    StampedRecvMsg stamped_data;
+    buffer.data.fill(0);
 
     while (true) {
         auto data_opt = this->recv_buffer_.pop();
@@ -149,7 +154,7 @@ void SerialPort::process_raw_data_from_buffer() {
             SPDLOG_LOGGER_INFO(this->log_, "data received from port buffer");
 
         buffer = data_opt.value();
-        for (size_t i = 0, n = buffer.size(); i < n;) { // Process raw data to msg data structure
+        for (size_t i = 0, n = buffer.data.size(); i < n;) { // Process raw data to msg data structure
             size_t j = i + kRecvMsgSize;
             if (j > n)
                 break; // range: [i, j)
@@ -162,8 +167,8 @@ void SerialPort::process_raw_data_from_buffer() {
                 continue;
             }
             // valid frame, copy to data recv buffer
-            std::memcpy(&data, buffer.data() + i, kRecvMsgSize);
-            data_recv_buffer_.push(data);
+            std::memcpy(&stamped_data.msg, buffer.data.data() + i, kRecvMsgSize);
+            data_recv_buffer_.push(stamped_data);
             i = j;
             if constexpr (SerialPortDebug)
                 SPDLOG_LOGGER_INFO(this->log_, "data processed from bits to float");
@@ -183,23 +188,23 @@ bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t 
             "buffer[14]={:x} "
             "buffer[15]={:x} "
             "buffer[16]={:x}",
-            buffer[0],
-            buffer[1],
-            buffer[2],
-            buffer[3],
-            buffer[4],
-            buffer[5],
-            buffer[6],
-            buffer[7],
-            buffer[8],
-            buffer[9],
-            buffer[10],
-            buffer[11],
-            buffer[12],
-            buffer[13],
-            buffer[14],
-            buffer[15],
-            buffer[16]
+            buffer.data[0],
+            buffer.data[1],
+            buffer.data[2],
+            buffer.data[3],
+            buffer.data[4],
+            buffer.data[5],
+            buffer.data[6],
+            buffer.data[7],
+            buffer.data[8],
+            buffer.data[9],
+            buffer.data[10],
+            buffer.data[11],
+            buffer.data[12],
+            buffer.data[13],
+            buffer.data[14],
+            buffer.data[15],
+            buffer.data[16]
         );
 
     if (end - begin != sizeof(MsgProtocol)) {
@@ -207,9 +212,9 @@ bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t 
             SPDLOG_LOGGER_ERROR(this->log_, "invalid range size: begin={} end={}", begin, end);
         return false;
     } // 下标标记的 buffer 大小不对
-    else if (buffer.size() < sizeof(MsgProtocol)) {
+    else if (buffer.data.size() < sizeof(MsgProtocol)) {
         if constexpr (SerialPortDebug)
-            SPDLOG_LOGGER_ERROR(this->log_, "buffer size {} too small", buffer.size());
+            SPDLOG_LOGGER_ERROR(this->log_, "buffer size {} too small", buffer.data.size());
         return false;
     } // buffer 太小
     else if (begin < 0 || end < 0) {
@@ -217,15 +222,17 @@ bool SerialPort::__verify_frame(const SerialPort::RecvMsgBuffer &buffer, size_t 
             SPDLOG_LOGGER_ERROR(this->log_, "invalid range: begin={} end={}", begin, end);
         return false;
     } // 下标为负数
-    else if (end > buffer.size() || begin > buffer.size()) {
-        if constexpr (SerialPortDebug)
-            SPDLOG_LOGGER_ERROR(this->log_, "invalid range: begin={} end={} buffer_size={}", begin, end, buffer.size());
-        return false;
-    } // 下标超出范围
-    else if (buffer[begin] != kProtocolRecvHead || buffer[end - 1] != kProtocolTail) {
+    else if (end > buffer.data.size() || begin > buffer.data.size()) {
         if constexpr (SerialPortDebug)
             SPDLOG_LOGGER_ERROR(
-                this->log_, "invalid head or tail: begin={:x} end={:x}", buffer[begin], buffer[end - 1]
+                this->log_, "invalid range: begin={} end={} buffer_size={}", begin, end, buffer.data.size()
+            );
+        return false;
+    } // 下标超出范围
+    else if (buffer.data[begin] != kProtocolRecvHead || buffer.data[end - 1] != kProtocolTail) {
+        if constexpr (SerialPortDebug)
+            SPDLOG_LOGGER_ERROR(
+                this->log_, "invalid head or tail: begin={:x} end={:x}", buffer.data[begin], buffer.data[end - 1]
             );
         return false;
     } // 首尾不对
@@ -274,4 +281,4 @@ void SerialPort::check_port_and_auto_reconnect() {
     }
 }
 
-std::optional<VisionPLCRecvMsg> SerialPort::get_data() { return data_recv_buffer_.pop(); }
+std::optional<StampedRecvMsg> SerialPort::get_data() { return data_recv_buffer_.pop(); }

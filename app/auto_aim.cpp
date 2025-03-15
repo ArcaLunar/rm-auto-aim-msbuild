@@ -39,18 +39,7 @@ int main() {
         auto to_annotate = std::make_shared<SyncQueue<RawFrameInfo>>(); // 1.
         // producer (1): raw image from camera
         std::thread annotate_img([&]() {
-            RawFrameInfo cur_frame;
-            std::optional<VisionPLCRecvMsg> recv_msg;
-            IMUInfo imu_info;
-            std::vector<AnnotatedArmorInfo> armors;
-
             while (true) {
-                cur_frame = cam->get_frame();
-                recv_msg  = port->get_data();
-                if (!recv_msg.has_value())
-                    continue;
-                imu_info.load_from_recvmsg(recv_msg.value());
-                armors = detector->annotate_image(cur_frame, imu_info);
             }
         });
         auto to_filter = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.

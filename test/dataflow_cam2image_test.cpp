@@ -29,7 +29,7 @@ int main() {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time - frame.timestamp);
         if (recv_msg.has_value() && duration.count() < 1000) {
             IMUInfo imu;
-            imu.load_from_recvmsg(recv_msg.value());
+            imu.load_from_recvmsg(recv_msg->msg);
             cv::imshow("frame", frame.frame);
             spdlog::info(
                 "frame width: {}, height: {}, imu.roll: {}, imu.pitch: {}, imu.yaw: {}",
