@@ -166,7 +166,7 @@ AutoAim::Armor::Armor(const LightBar &l1, const LightBar &l2) : left(l1), right(
 }
 
 bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
-    // 根据 y坐标 过滤装甲板
+    //* 根据 y坐标 过滤装甲板
     if constexpr (DetectorDebug)
         spdlog::info("doing ellipse bounding rect check...");
     if (this->left.ellipse.boundingRect2f().br().y < this->right.ellipse.boundingRect2f().tl().y) {
@@ -182,7 +182,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 灯条面积比例 过滤装甲板
+    //* 根据 灯条面积比例 过滤装甲板
     if constexpr (DetectorDebug)
         spdlog::info("doing area ratio check...");
     double area_ratio = this->left.ellipse_area / this->right.ellipse_area;
@@ -194,7 +194,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 装甲板面积 过滤装甲板
+    //* 根据 装甲板面积 过滤装甲板
     double armor_area = min_rect.size.area();
     if constexpr (DetectorDebug)
         spdlog::info("doing armor_area check");
@@ -206,7 +206,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 灯条面积占占装甲板面积的比值 过滤装甲板
+    //* 根据 灯条面积占占装甲板面积的比值 过滤装甲板
     double lightbar_area_over_armor_area_ratio = (left.ellipse_area + right.ellipse_area) / armor_area;
     if constexpr (DetectorDebug)
         spdlog::info("doing lightbar area ratio check");
@@ -222,7 +222,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 倾斜角度 过滤装甲板
+    //* 根据 倾斜角度 过滤装甲板
     if constexpr (DetectorDebug)
         spdlog::info("doing roll angle check");
     if (std::abs(angle) > config.max_roll_angle) {
@@ -233,7 +233,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 高度差比例 过滤装甲板
+    //* 根据 高度差比例 过滤装甲板
     double mean_length       = (left.long_axis + right.long_axis) / 2.0;
     double height_diff_ratio = std::abs(left.long_axis - right.long_axis) / std::max(left.long_axis, right.long_axis);
     if constexpr (DetectorDebug)
@@ -250,7 +250,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 y坐标差比例 过滤装甲板
+    //* 根据 y坐标差比例 过滤装甲板
     double y_diff_ratio = std::abs(left.center().y - right.center().y) / mean_length;
     if constexpr (DetectorDebug)
         spdlog::info("doing Y difference ratio check");
@@ -264,7 +264,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 x坐标差比例 过滤装甲板
+    //* 根据 x坐标差比例 过滤装甲板
     double x_diff_ratio = cv::norm(left.center() - right.center()) / mean_length;
     if constexpr (DetectorDebug)
         spdlog::info("doing X difference ratio check");
@@ -278,7 +278,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 装甲板的宽高比 过滤装甲板
+    //* 根据 装甲板的宽高比 过滤装甲板
     double aspect_ratio = cv::norm(left.center() - right.center()) / mean_length;
     if constexpr (DetectorDebug)
         spdlog::info("doing armor aspect ratio check");
@@ -295,7 +295,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 根据 灯条的角度差 过滤装甲板
+    //* 根据 灯条的角度差 过滤装甲板
     double angle_diff = std::abs(left.angle - right.angle);
     if (angle_diff > 180)
         angle_diff -= 180;
@@ -315,7 +315,7 @@ bool AutoAim::Armor::is_valid(const ArmorConfig &config) {
     if constexpr (DetectorDebug)
         spdlog::info("passed");
 
-    // 对装甲板进行分类
+    //* 对装甲板进行分类
     if (aspect_ratio > config.big_armor_ratio)
         this->type = ArmorType::Large;
     else

@@ -25,8 +25,8 @@ boost = dependency(
 
 mvs = subproject('mvs')
 mvs_dep = mvs.get_variable('mvs_dep')
-tf = subproject('tf3d')
-tf_dep = tf.get_variable('tf_dep')
+# tf = subproject('tf3d')
+# tf_dep = tf.get_variable('tf_dep')
 
 all_dep = [
     spdlog,
@@ -35,7 +35,7 @@ all_dep = [
     mvs_dep,
     boost,
     toml,
-    tf_dep,
+    # tf_dep,
 ]
 
 ### Directories

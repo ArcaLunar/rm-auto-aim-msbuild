@@ -24,10 +24,10 @@ void IMUInfo::load_from_recvmsg(const StampedRecvMsg &msg) {
 }
 
 cv::Mat IMUInfo::rotation() const {
-    return HerkulesTransform::Functions::get_rotation_matrix(
-        HerkulesTransform::Functions::deg_to_rad(roll),
-        HerkulesTransform::Functions::deg_to_rad(pitch),
-        HerkulesTransform::Functions::deg_to_rad(yaw)
+    return Transform::Functions::get_rotation_matrix(
+        Transform::Functions::deg_to_rad(roll),
+        Transform::Functions::deg_to_rad(pitch),
+        Transform::Functions::deg_to_rad(yaw)
     );
 }
 
@@ -35,11 +35,11 @@ cv::Mat IMUInfo::rotation() const {
 // Implement for Coordinate Transform
 // ========================================================
 
-double HerkulesTransform::Functions::rad_to_deg(const double &rad) { return rad * kRadianToDegree; }
+double Transform::Functions::rad_to_deg(const double &rad) { return rad * kRadianToDegree; }
 
-double HerkulesTransform::Functions::deg_to_rad(const double &deg) { return deg * kDegreeToRadian; }
+double Transform::Functions::deg_to_rad(const double &deg) { return deg * kDegreeToRadian; }
 
-cv::Mat HerkulesTransform::Functions::get_homography_matrix_from_rotation_translation(
+cv::Mat Transform::Functions::get_homography_matrix_from_rotation_translation(
     const cv::Mat &rotation, const cv::Mat &translation
 ) {
     // check size
@@ -59,7 +59,7 @@ cv::Mat HerkulesTransform::Functions::get_homography_matrix_from_rotation_transl
     return H;
 }
 
-std::pair<cv::Mat, cv::Mat> HerkulesTransform::Functions::get_rotation_translation_from_homography_matrix(
+std::pair<cv::Mat, cv::Mat> Transform::Functions::get_rotation_translation_from_homography_matrix(
     const cv::Mat &homography, bool return_rvec
 ) {
     // check size
@@ -74,7 +74,7 @@ std::pair<cv::Mat, cv::Mat> HerkulesTransform::Functions::get_rotation_translati
     return {R, t};
 }
 
-cv::Mat HerkulesTransform::Functions::rotate_around_x(const double &angle) {
+cv::Mat Transform::Functions::rotate_around_x(const double &angle) {
     double x = angle * kDegreeToRadian;
     return
         // clang-format off
@@ -85,7 +85,7 @@ cv::Mat HerkulesTransform::Functions::rotate_around_x(const double &angle) {
     // clang-format on
 }
 
-cv::Mat HerkulesTransform::Functions::rotate_around_y(const double &angle) {
+cv::Mat Transform::Functions::rotate_around_y(const double &angle) {
     double y = angle * kDegreeToRadian;
     return
         // clang-format off
@@ -96,7 +96,7 @@ cv::Mat HerkulesTransform::Functions::rotate_around_y(const double &angle) {
     // clang-format on
 }
 
-cv::Mat HerkulesTransform::Functions::rotate_around_z(const double &angle) {
+cv::Mat Transform::Functions::rotate_around_z(const double &angle) {
     double z = angle * kDegreeToRadian;
     return
         // clang-format off
@@ -107,7 +107,7 @@ cv::Mat HerkulesTransform::Functions::rotate_around_z(const double &angle) {
     // clang-format on
 }
 
-cv::Mat HerkulesTransform::Functions::get_translation_vector(const double &dx, const double &dy, const double &dz) {
+cv::Mat Transform::Functions::get_translation_vector(const double &dx, const double &dy, const double &dz) {
     return
         // clang-format off
     cv::Mat_<double>(3, 1) <<
@@ -117,7 +117,7 @@ cv::Mat HerkulesTransform::Functions::get_translation_vector(const double &dx, c
     // clang-format on
 }
 
-cv::Mat HerkulesTransform::Functions::get_rotation_matrix(const double &rx, const double &ry, const double &rz) {
+cv::Mat Transform::Functions::get_rotation_matrix(const double &rx, const double &ry, const double &rz) {
     return rotate_around_x(rz) * rotate_around_y(ry) * rotate_around_z(rx);
 }
 
@@ -125,9 +125,9 @@ cv::Mat HerkulesTransform::Functions::get_rotation_matrix(const double &rx, cons
 // Implement for Coordinate Manager
 // ========================================================
 
-HerkulesTransform::CoordinateManager::CoordinateManager() : node_cnt_(0) {}
+Transform::CoordinateManager::CoordinateManager() : node_cnt_(0) {}
 
-void HerkulesTransform::CoordinateManager::register_tf(
+void Transform::CoordinateManager::register_tf(
     const std::string &from, const std::string &to, const Eigen::Matrix4d &tf
 ) {
     if (!node_.contains(from)) {
@@ -151,7 +151,7 @@ void HerkulesTransform::CoordinateManager::register_tf(
 }
 
 Eigen::Matrix4d
-HerkulesTransform::CoordinateManager::extract_tf_matrix(const std::string &from, const std::string &to) {
+Transform::CoordinateManager::extract_tf_matrix(const std::string &from, const std::string &to) {
     assert(node_.contains(from) && node_.contains(to));
 
     std::vector<Eigen::Matrix4d> tf_res(node_cnt_, Eigen::Matrix4d::Identity());

@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    HerkulesTransform::CoordinateManager cm;
+    Transform::CoordinateManager cm;
     Eigen::Matrix4d a = Eigen::Matrix4d::Random(), b = Eigen::Matrix4d::Random(), c = Eigen::Matrix4d::Random();
     cm.register_tf("world", "camera", a);
     cm.register_tf("camera", "base_link", b);

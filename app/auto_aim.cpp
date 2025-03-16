@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 
 #include "cam_capture.hpp"
+#include "pose_convert.hpp"
 #include "publisher.hpp"
 #include "serial_port.hpp"
 #include "structs.hpp"
@@ -26,9 +27,12 @@ int main() {
         auto detector
             = std::make_shared<AutoAim::Publisher>("/media/arca/ArcaEXT4/codebases/pred_v2/config/detection_tr.toml");
 
+        //! create a coordinate transformer
+        auto pose_transformer = std::make_shared<AutoAim::PoseConvert>();
+
         //* start thread to read and process raw data from port
-        std::thread read_from_port([&]() { port->read_raw_data_from_port(); });
-        std::thread process_port_data([&]() { port->process_raw_data_from_buffer(); });
+        std::thread read_from_port([&] { port->read_raw_data_from_port(); });
+        std::thread process_port_data([&] { port->process_raw_data_from_buffer(); });
 
         //! create several sync queues for
         // 1. "image + imu => armors (2D) + label + type(large/small) + imu"
@@ -37,9 +41,10 @@ int main() {
         // 4. "armors(3D) => forward to filtering Policy"
 
         // auto to_annotate = std::make_shared<SyncQueue<RawFrameInfo>>(); // 1.
-        auto to_filter = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.
+        auto to_transform = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.
+        auto to_filter    = std::make_shared<SyncQueue<std::vector<AnnotatedArmorInfo>>>();
         // producer (1): raw image from camera
-        std::thread annotate_img([&]() {
+        std::thread annotate_img([&] {
             RawFrameInfo raw_frame;
 
             auto time          = std::chrono::system_clock::now();
@@ -74,8 +79,9 @@ int main() {
                 }
 
                 //* push to next queue
+                to_filter->write_data(armor_info);
                 for (auto &info : armor_info)
-                    to_filter->write_data(info);
+                    to_transform->write_data(info);
 
                 //* Benchmark test
                 if constexpr (AnnotateImageBenchmark) {
@@ -87,6 +93,30 @@ int main() {
                 }
             }
         });
+
+        //* Transform coordinate from 2D to 3D
+        auto armor3d = std::make_shared<SyncQueue<Armor3d>>();
+        std::thread transform([&] {
+            while (true) {
+                auto armor = to_transform->pop_data();
+                if (!armor.has_value())
+                    continue;
+
+                //* transform
+                auto tf_armor = pose_transformer->solve_absolute(armor.value());
+                armor3d->write_data(tf_armor);
+            }
+        });
+
+        //! first, create trackers for every enemy.
+        //! and also create corresponding `lock` for controlling fire permission.
+
+        //! filter based on policy predefined
+        // todo ....
+        std::thread filter_and_grant_fire([&] {});
+
+        //! update tracker using corresponding armor_3d
+        std::thread update_tracker([&] {});
 
         annotate_img.join();
 

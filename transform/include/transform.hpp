@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace HerkulesTransform {
+namespace Transform {
 
 namespace Functions {
 
@@ -58,7 +58,8 @@ double deg_to_rad(const double &deg);
 
 } // namespace Functions
 
-class CoordinateManager {
+class [[deprecated("only for testing, use PoseConvert instead")]] // Add warnings
+CoordinateManager {
   public:
     CoordinateManager();
     void register_tf(const std::string &from, const std::string &to, const Eigen::Matrix4d &tf);
@@ -73,6 +74,6 @@ class CoordinateManager {
     std::vector<std::vector<std::pair<int, int>>> G_; // transform 矩阵图信息，边：G[u] = (v, edge_id)
 };
 
-} // namespace HerkulesTransform
+} // namespace Transform
 
 #endif

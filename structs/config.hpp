@@ -4,7 +4,7 @@
 constexpr double kDegreeToRadian = 0.017453292519943295769236907684886;
 constexpr double kRadianToDegree = 57.295779513082320876798154814105;
 
-#define EnableAllDebug false
+#define EnableAllDebug true
 
 //! 调试选项
 constexpr bool SuppressValidationDebug = true; // 抑制 armor.cpp 里的 spdlog 输出（减少日志数量）
@@ -21,7 +21,9 @@ constexpr bool PublisherDebug  = true && EnableAllDebug;
 constexpr bool DisplayAnnotatedImageDebug = true && EnableAllDebug; // 识别完装甲板后是否显示标注装甲板的图像
 constexpr bool PublisherDiaplayImageDebug = false && EnableAllDebug;
 
-constexpr bool AnnotateImageBenchmark = true; 
+constexpr bool AnnotateImageBenchmark = true;
+
+constexpr bool PoseConvertDebug = true && EnableAllDebug;
 
 //! 赛场参数
 constexpr int ModelInputWidth     = 64;  // 摄像头输入图像宽度

@@ -106,10 +106,6 @@ struct IMUInfo {
 };
 
 // ========================================================
-// Coordinate Transform Related Data Structures
-// ========================================================
-
-// ========================================================
 // Detector Related Data Structures
 // ========================================================
 
@@ -213,7 +209,7 @@ struct Armor {
 } // namespace AutoAim
 
 /**
- * @brief 经过识别、坐标变换后的装甲板信息
+ * @brief 经过识别后的装甲板信息
  *
  */
 struct AnnotatedArmorInfo {
@@ -221,6 +217,41 @@ struct AnnotatedArmorInfo {
     AutoAim::Labels result;
     IMUInfo imu_info;
     std::chrono::time_point<std::chrono::system_clock> timestamp;
+};
+
+// ========================================================
+// Coordinate Transform Related Data Structures
+// ========================================================
+
+//! 单位均为 meter
+struct pose_under_camera_coord {
+    double roll{}, pitch{}, yaw{};
+    cv::Mat rvec, tvec;
+    double direction;  // 装甲板朝向
+    double distance;   // 装甲板中心到相机的距离
+    cv::Mat center_3d; // 装甲板中心在相机坐标系下的坐标
+
+    void load_from_imu(const IMUInfo &imu, const cv::Mat &T_camera_to_barrel);
+};
+//! 单位均为 meter
+//! Absolute: relative to barrel
+struct poes_under_barrel_coord {
+    double roll{}, pitch{}, yaw{};
+    double direction; // 装甲板朝向
+    double distance;
+    cv::Mat center_3d;
+};
+//! 单位均为 meter
+struct Armor3d : AnnotatedArmorInfo {
+    double bullet_flying_time;
+    double pitch_relative_to_barrel, yaw_relative_to_barrel;
+
+    cv::Mat T_armor_to_barrel; // meters
+    cv::Mat R_armor_to_barrel; // radians
+
+    //* transform information
+    pose_under_camera_coord p_a2c;
+    poes_under_barrel_coord p_barrel;
 };
 
 // ========================================================
