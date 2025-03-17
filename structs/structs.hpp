@@ -302,13 +302,15 @@ struct TrackingConfig {
 
 /**
  * @brief 预测下一帧（枪管系下的）装甲板的位置
- * 
+ *
  */
 struct PredictedPosition {
     double x, y, z;
     cv::Mat center_3d;
     double direction, distance;
     double pitch, yaw;
+
+    AutoAim::Labels tracking_id;
 };
 
 struct FiringConfig {

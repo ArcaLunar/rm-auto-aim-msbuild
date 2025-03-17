@@ -55,6 +55,8 @@ subdir('serialport')
 subdir('transform')
 subdir('tracker')
 subdir('detector')
+subdir('policy')
+subdir('firing')
 
 subdir('test')
 subdir('app')

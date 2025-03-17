@@ -66,6 +66,7 @@ void AutoAim::Tracker::_forward_and_init() {
 
 PredictedPosition AutoAim::Tracker::_forward_and_predict(const cv::Mat &estimate, const Armor3d &armor) {
     PredictedPosition result;
+    result.tracking_id = armor.result;
 
     if constexpr (std::is_same_v<decltype(this->kf_), KalmanFilter::KF>) {
         double est_x      = estimate.at<double>(0);
