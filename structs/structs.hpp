@@ -258,7 +258,7 @@ struct Armor3d : AnnotatedArmorInfo {
 // Tracker Related Data Structures
 // ========================================================
 
-namespace Tracker {
+namespace AutoAim {
 
 /**
  * @brief Tracker 状态。
@@ -287,7 +287,30 @@ enum class ArmorCount {
  *
  */
 struct TrackingConfig {
-    int lost_timeout;
+    int lost_timeout;      // seconds
+    double dt{0.01};       // s
+    double max_speed{3.0}; // m/s
+
+    double kf_q, kf_r;
 };
 
-} // namespace Tracker
+} // namespace AutoAim
+
+// ========================================================
+// Fire Permission Related Data Structures
+// ========================================================
+
+/**
+ * @brief 预测下一帧（枪管系下的）装甲板的位置
+ * 
+ */
+struct PredictedPosition {
+    double x, y, z;
+    cv::Mat center_3d;
+    double direction, distance;
+    double pitch, yaw;
+};
+
+struct FiringConfig {
+    double time_dalay;
+};

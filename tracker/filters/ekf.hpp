@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <functional>
 
-namespace Tracker {
+namespace KalmanFilter {
 
 /**
  * @brief 扩展卡尔曼滤波

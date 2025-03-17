@@ -1,6 +1,6 @@
 #include "ekf.hpp"
 
-void Tracker::EKF::set_initial_state(const Eigen::VectorXd &x0, const Eigen::MatrixXd &P_post0) {
+void KalmanFilter::EKF::set_initial_state(const Eigen::VectorXd &x0, const Eigen::MatrixXd &P_post0) {
     x_post = x0;
     P_post = P_post0;
 
@@ -10,26 +10,26 @@ void Tracker::EKF::set_initial_state(const Eigen::VectorXd &x0, const Eigen::Mat
     I      = Eigen::MatrixXd::Identity(n, n);
 }
 
-void Tracker::EKF::reset_state() {
+void KalmanFilter::EKF::reset_state() {
     x_post = Eigen::VectorXd::Zero(x_post.size());
     P_post = Eigen::MatrixXd::Identity(P_post.rows(), P_post.cols());
 }
 
-void Tracker::EKF::set_state_transition(const Vec2Vec &f, const Vec2Mat &j_f) {
+void KalmanFilter::EKF::set_state_transition(const Vec2Vec &f, const Vec2Mat &j_f) {
     this->f          = f;
     this->jacobian_f = j_f;
 }
 
-void Tracker::EKF::set_observation(const Vec2Vec &h, const Vec2Mat &j_h) {
+void KalmanFilter::EKF::set_observation(const Vec2Vec &h, const Vec2Mat &j_h) {
     this->h          = h;
     this->jacobian_h = j_h;
 }
 
-void Tracker::EKF::set_process_noise_covariance(const Void2Mat &update_Q) { this->update_Q = update_Q; }
+void KalmanFilter::EKF::set_process_noise_covariance(const Void2Mat &update_Q) { this->update_Q = update_Q; }
 
-void Tracker::EKF::set_measurement_noise_covariance(const Vec2Mat &update_R) { this->update_R = update_R; }
+void KalmanFilter::EKF::set_measurement_noise_covariance(const Vec2Mat &update_R) { this->update_R = update_R; }
 
-Eigen::MatrixXd Tracker::EKF::predict() {
+Eigen::MatrixXd KalmanFilter::EKF::predict() {
     F = jacobian_f(x_post);
     Q = update_Q();
 
@@ -42,7 +42,7 @@ Eigen::MatrixXd Tracker::EKF::predict() {
     return x_pri;
 }
 
-Eigen::MatrixXd Tracker::EKF::update(const Eigen::VectorXd &z) {
+Eigen::MatrixXd KalmanFilter::EKF::update(const Eigen::VectorXd &z) {
     H = jacobian_h(x_post);
     R = update_R(z);
 
