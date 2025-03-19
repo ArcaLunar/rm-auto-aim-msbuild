@@ -1,0 +1,6 @@
+# index files
+.cache
+.idea
+.pred
+.vscode
+builddir
