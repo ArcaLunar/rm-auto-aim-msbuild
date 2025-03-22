@@ -1,4 +1,4 @@
-ekf_lib = static_library(
+ekf_lib = library(
     'ekf',
     'filters/ekf.cpp',
     include_directories: [
@@ -13,12 +13,11 @@ ekf_dep = declare_dependency(
     link_with: ekf_lib,
 )
 
-tracker_lib = static_library(
+tracker_lib = library(
     'tracker',
     'tracker.cpp',
     include_directories: [
         include_directories('./'),
-        headers,
     ],
     dependencies: [
         all_dep,

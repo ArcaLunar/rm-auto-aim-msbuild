@@ -1,4 +1,4 @@
-policy_lib = static_library(
+policy_lib = library(
     'policy',
     'policy.cpp',
     include_directories: include_directories('.'),

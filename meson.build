@@ -5,6 +5,7 @@ project(
     default_options: [
         'cpp_std=c++20',
         'cpp_args=-w',
+        'default_library=shared',
     ],
 )
 
@@ -50,11 +51,11 @@ install_subdir(
 ### Structs
 subdir('structs')
 subdir('work_queue')
+subdir('detector')
 subdir('cam_capture')
 subdir('serialport')
 subdir('transform')
 subdir('tracker')
-subdir('detector')
 subdir('policy')
 subdir('firing')
 

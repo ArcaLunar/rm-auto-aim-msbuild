@@ -1,6 +1,6 @@
 firing_inc = include_directories('.')
 
-firing_lib = static_library(
+firing_lib = library(
     'firing',
     'firing.cpp',
     include_directories: [

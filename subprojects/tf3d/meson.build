@@ -11,7 +11,7 @@ srcs = files(
 
 eigen = dependency('eigen3')
 
-tf_lib = static_library(
+tf_lib = library(
     'tf3d',
     srcs,
     include_directories: include_directories('include'),

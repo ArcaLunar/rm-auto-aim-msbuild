@@ -12,16 +12,14 @@ sources = files(
     'src/publisher.cpp',
 )
 
-detector_lib = static_library(
+detector_lib = library(
     'detector',
     headers + sources,
     include_directories: [
         detector_include,
     ],
     dependencies: [
-        utils_dep,
         all_dep,
-        pnp_solver_dep,
     ],
 )
 

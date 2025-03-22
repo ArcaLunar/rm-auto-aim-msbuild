@@ -178,8 +178,8 @@ struct LightBar {
     double ellipse_area, contour_area; // 椭圆面积、轮廓面积
     double solidity;                   // 轮廓面积/椭圆面积
 
-    explicit LightBar();
-    explicit LightBar(const std::vector<cv::Point> &contour);
+    LightBar();
+    LightBar(const std::vector<cv::Point> &contour);
     ~LightBar();
 
     cv::Point2f center() const;

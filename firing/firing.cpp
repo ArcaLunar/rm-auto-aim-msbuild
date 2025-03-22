@@ -1,5 +1,6 @@
 #include "firing.hpp"
 #include "structs.hpp"
+#include <cassert>
 
 FireController::FireController() {
     this->log_ = spdlog::stdout_color_mt("FireController");
@@ -28,3 +29,24 @@ VisionPLCSendMsg FireController::_pack(const PredictedPosition &pred) {
 
     return msg;
 }
+
+bool FireController::_check_fire() {
+    assert(false && "Not implemented");
+    return false;
+}
+
+bool FireController::_check_patrol() {
+    assert(false && "Not implemented");
+    return false;
+}
+
+bool FireController::_check_found() {
+    assert(false && "Not implemented");
+    return false;
+}
+
+bool FireController::_check_done_fitting() {
+    assert(false && "Not implemented");
+    return false;
+}
+

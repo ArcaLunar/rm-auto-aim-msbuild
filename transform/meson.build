@@ -1,10 +1,9 @@
-pnp_solver_lib = static_library(
+pnp_solver_lib = library(
     'pnp_solver',
     'src/pnp_solver.cpp',
     include_directories: include_directories('./include'),
     dependencies: [
         all_dep,
-        utils_dep,
     ],
 )
 
@@ -13,17 +12,16 @@ pnp_solver_dep = declare_dependency(
     link_with: pnp_solver_lib,
 )
 
-transform_lib = static_library(
+all_dep += pnp_solver_dep
+
+transform_lib = library(
     'transform',
     'src/transform.cpp',
     include_directories: [
         include_directories('./include'),
-        headers,
     ],
     dependencies: [
         all_dep,
-        pnp_solver_dep,
-        utils_dep,
     ],
 )
 transform_dep = declare_dependency(
@@ -31,14 +29,16 @@ transform_dep = declare_dependency(
     link_with: transform_lib,
 )
 
-pose_cvt_lib = static_library(
+all_dep += [
+    transform_dep,
+]
+
+pose_cvt_lib = library(
     'pose_cvt',
     'src/pose_convert.cpp',
     include_directories: include_directories('./include'),
     dependencies: [
         all_dep,
-        transform_dep,
-        utils_dep,
     ],
 )
 pose_cvt_dep = declare_dependency(
@@ -47,7 +47,5 @@ pose_cvt_dep = declare_dependency(
 )
 
 all_dep += [
-    transform_dep,
-    pnp_solver_dep,
     pose_cvt_dep,
 ]

@@ -1,9 +1,8 @@
-cam_capture = static_library(
+cam_capture = library(
     'cam_capture',
     'cam_capture.cpp',
     include_directories: [
         include_directories('./'),
-        headers,
     ],
     dependencies: [
         all_dep,
@@ -16,7 +15,6 @@ cam_capture = static_library(
 cam_capture_dep = declare_dependency(
     include_directories: [
         include_directories('./'),
-        headers,
     ],
     link_with: cam_capture,
 )
