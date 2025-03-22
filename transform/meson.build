@@ -31,4 +31,23 @@ transform_dep = declare_dependency(
     link_with: transform_lib,
 )
 
-all_dep += [transform_dep, pnp_solver_dep]
+pose_cvt_lib = static_library(
+    'pose_cvt',
+    'src/pose_convert.cpp',
+    include_directories: include_directories('./include'),
+    dependencies: [
+        all_dep,
+        transform_dep,
+        utils_dep,
+    ],
+)
+pose_cvt_dep = declare_dependency(
+    include_directories: include_directories('./include'),
+    link_with: pose_cvt_lib,
+)
+
+all_dep += [
+    transform_dep,
+    pnp_solver_dep,
+    pose_cvt_dep,
+]

@@ -29,6 +29,8 @@ class Tracker {
      */
     PredictedPosition update(const Armor3d &armor3d);
 
+    PredictedPosition get_pred() { return pred_; }
+
   protected:
     TrackingConfig cfg_;
     FiringConfig fire_cfg_;
@@ -44,6 +46,7 @@ class Tracker {
     LowPassFilter low_pass_;
     int state_dim, observe_dim;
     KalmanFilter::KF kf_;
+    PredictedPosition pred_;
 
     std::shared_ptr<spdlog::logger> log_;
 

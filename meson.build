@@ -15,7 +15,7 @@ headers = [include_directories('./structs')]
 spdlog = dependency('spdlog')
 opencv = dependency('opencv4')
 eigen = dependency('eigen3')
-toml = dependency('tomlplusplus')
+toml = subproject('tomlplusplus', default_options: ['default_library=static']).get_variable('tomlplusplus_dep')
 boost = dependency(
     'boost',
     modules: [

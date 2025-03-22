@@ -35,8 +35,8 @@ PredictedPosition AutoAim::Tracker::update(const Armor3d &armor3d) {
         this->status_ = TrackingStatus::FITTING;
     }
 
-    cv::Mat estimate = this->_forward_and_update(armor3d);
-    return this->_forward_and_predict(estimate, armor3d);
+    cv::Mat estimate   = this->_forward_and_update(armor3d);
+    return this->pred_ = this->_forward_and_predict(estimate, armor3d);
 }
 
 void AutoAim::Tracker::_forward_and_init() {

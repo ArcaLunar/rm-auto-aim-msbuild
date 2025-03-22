@@ -11,8 +11,6 @@
 
 #include "structs.hpp"
 
-#include <map>
-#include <semaphore>
 #include <vector>
 
 class SelectingPolicy {
@@ -22,13 +20,10 @@ class SelectingPolicy {
      *
      * @param armors
      */
-    void select_and_release(const std::vector<AnnotatedArmorInfo> &armors);
-    void grant_fire_permission(const AutoAim::Labels &label);
-    void revoke_fire_permission(const AutoAim::Labels &label);
+    AutoAim::Labels select_and_release(const std::vector<AnnotatedArmorInfo> &armors);
 
   protected:
     AnnotatedArmorInfo previous_;
-    std::map<AutoAim::Labels, std::binary_semaphore> fire_sem_;
 };
 
 #endif // __POLICY_HPP__

@@ -4,9 +4,6 @@ executable(
     # include_directories: [headers],
     dependencies: [
         all_dep,
-        cam_capture_dep,
-        work_queue_dep,
-        serial_port_dep,
     ],
     install: true,
     # install_dir: 'bin',

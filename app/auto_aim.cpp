@@ -1,4 +1,6 @@
 #include "config.hpp"
+#include "tracker.hpp"
+#include <map>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include <boost/exception/diagnostic_information.hpp>
@@ -8,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "cam_capture.hpp"
+#include "policy.hpp"
 #include "pose_convert.hpp"
 #include "publisher.hpp"
 #include "serial_port.hpp"
@@ -94,7 +97,21 @@ int main() {
             }
         });
 
+        //! first, create trackers for every enemy.
+        std::map<AutoAim::Labels, std::shared_ptr<AutoAim::Tracker>> trackers;
+        [&] {
+            trackers[AutoAim::Labels::Hero]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Hero);
+            trackers[AutoAim::Labels::Infantry3] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry3);
+            trackers[AutoAim::Labels::Engineer]  = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Engineer);
+            trackers[AutoAim::Labels::Infantry4] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry4);
+            trackers[AutoAim::Labels::Infantry5] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry5);
+            trackers[AutoAim::Labels::Outpost]   = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Outpost);
+            trackers[AutoAim::Labels::Sentry]    = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Sentry);
+            trackers[AutoAim::Labels::Base]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Base);
+        }();
+
         //* Transform coordinate from 2D to 3D
+        //* And update tracker
         auto armor3d = std::make_shared<SyncQueue<Armor3d>>();
         std::thread transform([&] {
             while (true) {
@@ -105,20 +122,27 @@ int main() {
                 //* transform
                 auto tf_armor = pose_transformer->solve_absolute(armor.value());
                 armor3d->write_data(tf_armor);
+
+                //* update tracker
+                trackers[armor->result]->update(tf_armor);
             }
         });
 
-        //! first, create trackers for every enemy.
-        //! and also create corresponding `lock` for controlling fire permission.
-
         //! filter based on policy predefined
-        // todo ....
-        std::thread filter_and_grant_fire([&] {});
+        SelectingPolicy policy;
+        std::thread filter_and_grant_fire([&] {
+            while (true) {
+                auto armor = armor3d->pop_data();
+                if (!armor.has_value())
+                    continue;
+            }
+        });
 
-        //! update tracker using corresponding armor_3d
-        std::thread update_tracker([&] {});
-
+        read_from_port.join();
+        process_port_data.join();
         annotate_img.join();
+        transform.join();
+        filter_and_grant_fire.join();
 
     } catch (std::exception &E) {
         spdlog::critical("{}", E.what());
