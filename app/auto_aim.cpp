@@ -3,6 +3,9 @@
 #include <map>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+#define PWD std::string("/media/arca/ArcaEXT4/codebases/pred_v2/")
+#define CONFIG_PATH std::string(PWD + "config/")
+
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/exception/exception.hpp>
 #include <exception>
@@ -21,19 +24,17 @@
 int main() {
     try {
         //! open and initialize camera
-        auto cam = std::make_shared<HikCamera>("/media/arca/ArcaEXT4/codebases/pred_v2/config/cam.toml");
+        auto cam = std::make_shared<HikCamera>(CONFIG_PATH + "cam.toml");
 
         //! open and initialize port
-        auto port = std::make_shared<SerialPort>("/media/arca/ArcaEXT4/codebases/pred_v2/config/comm.toml");
+        auto port = std::make_shared<SerialPort>(CONFIG_PATH + "comm.toml");
         port->initialize_port();
 
         //! create a detector for detecting armor
-        auto detector
-            = std::make_shared<AutoAim::Publisher>("/media/arca/ArcaEXT4/codebases/pred_v2/config/detection_tr.toml");
+        auto detector = std::make_shared<AutoAim::Publisher>(CONFIG_PATH + "detection_tr.toml");
 
         //! create a coordinate transformer
-        auto pose_transformer
-            = std::make_shared<AutoAim::PoseConvert>("/media/arca/ArcaEXT4/codebases/pred_v2/config/transform.toml");
+        auto pose_transformer = std::make_shared<AutoAim::PoseConvert>(CONFIG_PATH + "transform.toml");
 
         //* start thread to read and process raw data from port
         std::thread read_from_port([&] { port->read_raw_data_from_port(); });
@@ -100,14 +101,15 @@ int main() {
         //! first, create trackers for every enemy.
         std::map<AutoAim::Labels, std::shared_ptr<AutoAim::Tracker>> trackers;
         [&] {
-            trackers[AutoAim::Labels::Hero]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Hero);
-            trackers[AutoAim::Labels::Infantry3] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry3);
-            trackers[AutoAim::Labels::Engineer]  = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Engineer);
-            trackers[AutoAim::Labels::Infantry4] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry4);
-            trackers[AutoAim::Labels::Infantry5] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry5);
-            trackers[AutoAim::Labels::Outpost]   = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Outpost);
-            trackers[AutoAim::Labels::Sentry]    = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Sentry);
-            trackers[AutoAim::Labels::Base]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Base);
+            const std::string cfg                = CONFIG_PATH + "tracking.toml";
+            trackers[AutoAim::Labels::Hero]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Hero, cfg);
+            trackers[AutoAim::Labels::Infantry3] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry3, cfg);
+            trackers[AutoAim::Labels::Engineer]  = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Engineer, cfg);
+            trackers[AutoAim::Labels::Infantry4] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry4, cfg);
+            trackers[AutoAim::Labels::Infantry5] = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Infantry5, cfg);
+            trackers[AutoAim::Labels::Outpost]   = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Outpost, cfg);
+            trackers[AutoAim::Labels::Sentry]    = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Sentry, cfg);
+            trackers[AutoAim::Labels::Base]      = std::make_shared<AutoAim::Tracker>(AutoAim::Labels::Base, cfg);
         }();
 
         //* Transform coordinate from 2D to 3D
@@ -160,7 +162,7 @@ int main() {
                     state.distance,
                     state.direction
                 );
-                
+
                 fire_controller->set_allow(which);
                 fire_controller->try_fire(state, armors.value());
             }

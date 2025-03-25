@@ -13,10 +13,7 @@ namespace AutoAim {
 
 class Tracker {
   public:
-    Tracker(
-        const Labels &label,
-        const std::string &config_path = "/media/arca/ArcaEXT4/codebases/pred_v2/config/tracking.toml"
-    );
+    Tracker(const Labels &label, const std::string &config_path);
     /**
      * @brief 定期检查跟踪状态。超过一定时间未检测到目标则认为丢失。参数由配置文件指定。
      * @remark Should run as a `thread`
