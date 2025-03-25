@@ -151,6 +151,16 @@ int main() {
 
                 auto which = policy->select(armors.value());
                 auto state = trackers[which]->get_pred();
+
+                spdlog::info(
+                    "selected state: ({}, {}, {}) dist={} direction={}",
+                    state.x,
+                    state.y,
+                    state.z,
+                    state.distance,
+                    state.direction
+                );
+                
                 fire_controller->set_allow(which);
                 fire_controller->try_fire(state, armors.value());
             }

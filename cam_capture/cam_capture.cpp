@@ -1,3 +1,4 @@
+#include "PixelType.h"
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include "cam_capture.hpp"
@@ -137,25 +138,23 @@ cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRA
     auto mark           = pstImageInfo->enPixelType;
     auto channel_type   = CV_8UC3;
     auto transform_type = cv::COLOR_BayerGB2RGB;
-
-    if (mark == PixelType_Gvsp_BayerGB8) {
-        channel_type   = CV_8UC1;
-        transform_type = cv::COLOR_BayerRG2RGB;
-    } else if (mark == PixelType_Gvsp_BGR8_Packed) {
-        channel_type   = CV_8UC3;
-        transform_type = cv::COLOR_BGR2GRAY;
-    } else if (mark == PixelType_Gvsp_BayerGB8) {
-        channel_type   = CV_8UC1;
-        transform_type = cv::COLOR_BayerGB2RGB;
-    } else
-        SPDLOG_LOGGER_ERROR(this->log_, "unsupported pixel format");
-
     cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, channel_type, pstImage->pBufAddr);
-    if (transform_type == cv::COLOR_BGR2GRAY)
-        result = src;
-    else
-        cv::cvtColor(src, result, transform_type);
-    cv::cvtColor(result, result, cv::COLOR_RGB2BGR);
+
+    switch (mark) {
+        case PixelType_Gvsp_BayerRG8: {
+            cv::cvtColor(src, result, cv::COLOR_BayerRG2BGR);
+            break;
+        }
+        case PixelType_Gvsp_BayerGB8: {
+            cv::cvtColor(src, result, cv::COLOR_BayerGB2BGR);
+            break;
+        }
+        case PixelType_Gvsp_BGR8_Packed: {
+            result = src;
+            break;
+        }
+    }
+
     return result;
 }
 
@@ -188,21 +187,19 @@ void HikCamera::setup(const std::string &config_path) {
 
 #define SET_PARAM(func, value, item)                                                                                   \
     if (MV_CC_Set##func(this->handle_, item, value) != MV_OK)                                                          \
-        SPDLOG_LOGGER_CRITICAL(this->log_, "setting {} to {} failed", item, value);                                                  \
+        SPDLOG_LOGGER_CRITICAL(this->log_, "setting {} to {} failed", item, value);                                    \
     else                                                                                                               \
         SPDLOG_LOGGER_INFO(this->log_, "setting {} to {} succeeded.", item, value);
 
     //* Pixel Format
-    // if (config.pixel_format == "BayerRG8") {
-    //     SET_PARAM(EnumValue, PixelType_Gvsp_BayerRG8, "PixelFormat");
-    // } else if (config.pixel_format == "BayerGB8") {
-    //     SET_PARAM(EnumValue, PixelType_Gvsp_BayerGB8, "PixelFormat");
-    // } else if (config.pixel_format == "BGR8") {
-    //     SET_PARAM(EnumValue, PixelType_Gvsp_BGR8_Packed, "PixelFormat");
-    // } else {
-    //     SPDLOG_LOGGER_CRITICAL(this->log_, "unsupported pixel format");
-    //     exit(-1);
-    // }
+    if (config.pixel_format == "BayerRG8") {
+        SET_PARAM(EnumValue, PixelType_Gvsp_BayerRG8, "PixelFormat");
+    } else if (config.pixel_format == "BayerGB8") {
+        SET_PARAM(EnumValue, PixelType_Gvsp_BayerGB8, "PixelFormat");
+    } else {
+        SPDLOG_LOGGER_CRITICAL(this->log_, "unsupported pixel format");
+        exit(-1);
+    }
     //* Trigger mode
     SET_PARAM(EnumValue, config.trigger_mode, "TriggerMode");
     //* PayLoad
@@ -242,8 +239,11 @@ cv::Mat HikCamera::__get_frame() {
     }
 
     if constexpr (CameraDebug)
-        SPDLOG_LOGGER_INFO(this->log_, 
-            "retrieving image buffer, w={}, h={}", this->buffer_.stFrameInfo.nWidth, this->buffer_.stFrameInfo.nHeight
+        SPDLOG_LOGGER_INFO(
+            this->log_,
+            "retrieving image buffer, w={}, h={}",
+            this->buffer_.stFrameInfo.nWidth,
+            this->buffer_.stFrameInfo.nHeight
         );
     auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
     MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
