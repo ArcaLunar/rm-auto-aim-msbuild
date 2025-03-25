@@ -40,8 +40,25 @@ AutoAim::PoseConvert::PoseConvert(const std::string &cfg_path) {
 
     try {
         auto config = toml::parse(cfg_path);
-        
-        throw std::runtime_error("not implemented yet");
+
+        auto F = [&](const std::string &_s, cv::Mat &_res) {
+            auto cam2barrel = config[_s];
+            std::vector<double> data;
+            if (const auto *arr = cam2barrel.as_array()) {
+                for (const auto &elem : *arr)
+                    data.push_back(elem.as_floating_point()->get());
+            }
+            _res = cv::Mat(data, true).reshape(3, 1);
+        };
+        F("cameraToBarrel", this->T_camera_to_barrel);
+        F("cameraToIMU", this->T_camera_to_imu);
+        cv::Mat R;
+        F("cameraToIMURotation", R);
+        this->R_camera_to_imu = Transform::Functions::get_rotation_matrix(
+            R.at<double>(0, 0) * kDegreeToRadian,
+            R.at<double>(1, 0) * kDegreeToRadian,
+            R.at<double>(2, 0) * kDegreeToRadian
+        );
 
     } catch (const std::exception &e) {
         SPDLOG_LOGGER_CRITICAL(this->log_, "failed to init pose transformer: {}", e.what());

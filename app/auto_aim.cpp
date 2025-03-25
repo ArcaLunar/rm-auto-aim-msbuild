@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "cam_capture.hpp"
+#include "firing.hpp"
 #include "policy.hpp"
 #include "pose_convert.hpp"
 #include "publisher.hpp"
@@ -31,7 +32,8 @@ int main() {
             = std::make_shared<AutoAim::Publisher>("/media/arca/ArcaEXT4/codebases/pred_v2/config/detection_tr.toml");
 
         //! create a coordinate transformer
-        auto pose_transformer = std::make_shared<AutoAim::PoseConvert>();
+        auto pose_transformer
+            = std::make_shared<AutoAim::PoseConvert>("/media/arca/ArcaEXT4/codebases/pred_v2/config/transform.toml");
 
         //* start thread to read and process raw data from port
         std::thread read_from_port([&] { port->read_raw_data_from_port(); });
@@ -43,9 +45,9 @@ int main() {
         // 3. "armors(3D) => forward to corresponding tracker"
         // 4. "armors(3D) => forward to filtering Policy"
 
-        // auto to_annotate = std::make_shared<SyncQueue<RawFrameInfo>>(); // 1.
-        auto to_transform = std::make_shared<SyncQueue<AnnotatedArmorInfo>>(); // 2.
-        auto to_filter    = std::make_shared<SyncQueue<std::vector<AnnotatedArmorInfo>>>();
+        auto to_tf     = std::make_shared<SyncQueue<std::vector<AnnotatedArmorInfo>>>();
+        auto to_filter = std::make_shared<SyncQueue<std::vector<Armor3d>>>();
+
         // producer (1): raw image from camera
         std::thread annotate_img([&] {
             RawFrameInfo raw_frame;
@@ -82,9 +84,7 @@ int main() {
                 }
 
                 //* push to next queue
-                to_filter->write_data(armor_info);
-                for (auto &info : armor_info)
-                    to_transform->write_data(info);
+                to_tf->write_data(armor_info);
 
                 //* Benchmark test
                 if constexpr (AnnotateImageBenchmark) {
@@ -112,29 +112,47 @@ int main() {
 
         //* Transform coordinate from 2D to 3D
         //* And update tracker
-        auto armor3d = std::make_shared<SyncQueue<Armor3d>>();
         std::thread transform([&] {
+            std::vector<Armor3d> arms;
             while (true) {
-                auto armor = to_transform->pop_data();
-                if (!armor.has_value())
+                auto armors = to_tf->pop_data();
+                if (!armors.has_value())
                     continue;
 
                 //* transform
-                auto tf_armor = pose_transformer->solve_absolute(armor.value());
-                armor3d->write_data(tf_armor);
+                arms.clear();
+                for (const auto &armor : armors.value()) {
+                    auto tf_arm = pose_transformer->solve_absolute(armor);
+                    spdlog::info("transformed data writen");
 
-                //* update tracker
-                trackers[armor->result]->update(tf_armor);
+                    //* update tracker
+                    trackers[armor.result]->update(tf_arm);
+                    spdlog::info("tracker updated");
+
+                    arms.push_back(tf_arm);
+                }
+
+                //* push to next queue
+                to_filter->write_data(arms);
             }
         });
 
         //! filter based on policy predefined
-        SelectingPolicy policy;
+        auto policy          = std::make_shared<SelectingPolicy>();
+        auto fire_controller = std::make_shared<FireController>();
+
+        fire_controller->set_port(port);
+
         std::thread filter_and_grant_fire([&] {
             while (true) {
-                auto armor = armor3d->pop_data();
-                if (!armor.has_value())
+                auto armors = to_filter->pop_data();
+                if (!armors.has_value())
                     continue;
+
+                auto which = policy->select(armors.value());
+                auto state = trackers[which]->get_pred();
+                fire_controller->set_allow(which);
+                fire_controller->try_fire(state, armors.value());
             }
         });
 
@@ -143,7 +161,6 @@ int main() {
         annotate_img.join();
         transform.join();
         filter_and_grant_fire.join();
-
     } catch (std::exception &E) {
         spdlog::critical("{}", E.what());
     } catch (boost::exception &E) {

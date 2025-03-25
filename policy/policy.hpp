@@ -20,10 +20,10 @@ class SelectingPolicy {
      *
      * @param armors
      */
-    AutoAim::Labels select_and_release(const std::vector<AnnotatedArmorInfo> &armors);
+    AutoAim::Labels select(const std::vector<Armor3d> &armors);
 
   protected:
-    AnnotatedArmorInfo previous_;
+    Armor3d previous_;
 };
 
 #endif // __POLICY_HPP__

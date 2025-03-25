@@ -5,9 +5,13 @@
 #include "structs.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <vector>
+
+constexpr static int kFiringTimeout = 5000; // ms
 
 class FireController {
   protected:
@@ -17,16 +21,19 @@ class FireController {
     std::shared_ptr<spdlog::logger> log_;
 
   private:
-    bool _check_fire();
-    bool _check_patrol();
-    bool _check_found();
-    bool _check_done_fitting();
-    VisionPLCSendMsg _pack(const PredictedPosition &pred);
+    bool _check_fire(const PredictedPosition &pred, const std::vector<Armor3d> &context);
+    bool _check_patrol(const PredictedPosition &pred, const std::vector<Armor3d> &context);
+    bool _check_found(const PredictedPosition &pred, const std::vector<Armor3d> &context);
+    bool _check_done_fitting(const PredictedPosition &pred, const std::vector<Armor3d> &context);
+    VisionPLCSendMsg _pack(const PredictedPosition &pred, const std::vector<Armor3d> &context);
+
+    std::chrono::high_resolution_clock::time_point last_fire_time;
 
   public:
     FireController();
     void set_port(std::shared_ptr<SerialPort> port);
     void set_allow(const AutoAim::Labels &label);
+    void try_fire(const PredictedPosition &pred, const std::vector<Armor3d> &context);
 };
 
 #endif // __FIRING_HPP__

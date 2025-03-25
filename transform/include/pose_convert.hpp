@@ -24,7 +24,7 @@ namespace AutoAim {
  */
 class PoseConvert {
   public:
-    PoseConvert(const std::string &cfg_path="/media/arca/ArcaEXT4/codebases/pred_v2/config/transform.toml");
+    PoseConvert(const std::string &cfg_path);
     /**
      * @brief 解算出 base 系下的装甲板中心坐标
      *
