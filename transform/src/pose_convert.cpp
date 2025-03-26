@@ -1,3 +1,4 @@
+#include <iostream>
 #include <spdlog/spdlog.h>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
@@ -39,16 +40,20 @@ AutoAim::PoseConvert::PoseConvert(const std::string &cfg_path) {
     this->log_->set_pattern("[%H:%M:%S, +%4oms] [%15s:%3# in %!] [%^%l%$] %v");
 
     try {
-        auto config = toml::parse(cfg_path);
+        SPDLOG_LOGGER_INFO(this->log_, "initializing pose transformer");
+        auto config = toml::parse_file(cfg_path);
+        SPDLOG_LOGGER_INFO(this->log_, "config file loaded");
 
         auto F = [&](const std::string &_s, cv::Mat &_res) {
             auto cam2barrel = config[_s];
             std::vector<double> data;
+            SPDLOG_LOGGER_INFO(this->log_, "initializing {}", _s);
             if (const auto *arr = cam2barrel.as_array()) {
                 for (const auto &elem : *arr)
                     data.push_back(elem.as_floating_point()->get());
             }
             _res = cv::Mat(data, true).reshape(3, 1);
+            SPDLOG_LOGGER_INFO(this->log_, "{} has been initialized", _s);
         };
         F("cameraToBarrel", this->T_camera_to_barrel);
         F("cameraToIMU", this->T_camera_to_imu);

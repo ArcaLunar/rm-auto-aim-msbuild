@@ -5,7 +5,7 @@ project(
     default_options: [
         'cpp_std=c++20',
         'cpp_args=-w',
-        'default_library=shared',
+        'default_library=static',
     ],
 )
 

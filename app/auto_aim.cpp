@@ -23,6 +23,9 @@
 
 int main() {
     try {
+        std::shared_ptr<spdlog::logger> log = spdlog::stdout_color_mt("main");
+        log->set_level(spdlog::level::trace);
+        log->set_pattern("[%H:%M:%S, +%4oms] [%15s:%3# in %!] [%^%l%$] %v");
         //! open and initialize camera
         auto cam = std::make_shared<HikCamera>(CONFIG_PATH + "cam.toml");
 
@@ -38,32 +41,38 @@ int main() {
 
         //* start thread to read and process raw data from port
         std::thread read_from_port([&] { port->read_raw_data_from_port(); });
+        SPDLOG_LOGGER_INFO(log, "reading-raw-from-port thread started");
         std::thread process_port_data([&] { port->process_raw_data_from_buffer(); });
+        SPDLOG_LOGGER_INFO(log, "processing-raw-from-port thread started");
 
         //! create several sync queues for
         // 1. "image + imu => armors (2D) + label + type(large/small) + imu"
         // 2. "armors(2D) => armors(3D), done in the same sync queue"
         // 3. "armors(3D) => forward to corresponding tracker"
         // 4. "armors(3D) => forward to filtering Policy"
-
+        SPDLOG_LOGGER_INFO(log, "creating sync queues");
         auto to_tf     = std::make_shared<SyncQueue<std::vector<AnnotatedArmorInfo>>>();
         auto to_filter = std::make_shared<SyncQueue<std::vector<Armor3d>>>();
 
         // producer (1): raw image from camera
         std::thread annotate_img([&] {
             RawFrameInfo raw_frame;
+            IMUInfo imu_info;
 
             auto time          = std::chrono::system_clock::now();
             auto msg_grep_time = std::chrono::system_clock::now();
             auto annotate_time = std::chrono::system_clock::now();
 
-            IMUInfo imu_info;
+            SPDLOG_LOGGER_INFO(log, "start annotating image");
+
             while (true) {
                 using namespace std::chrono;
+                SPDLOG_LOGGER_INFO(log, "getting raw frame");
                 raw_frame = cam->get_frame();
                 time      = system_clock::now();
 
                 //* get correct recv msg
+                SPDLOG_LOGGER_INFO(log, "getting correct recv msg");
                 auto recv_msg = port->get_data();
                 for (auto duration = time - recv_msg->timestamp; duration > milliseconds(10);
                      recv_msg      = port->get_data())
@@ -74,6 +83,7 @@ int main() {
                 }
 
                 //* annotate
+                SPDLOG_LOGGER_INFO(log, "annotating image");
                 imu_info.load_from_recvmsg(*recv_msg);
                 auto armor_info = detector->annotate_image(raw_frame, imu_info);
                 if constexpr (AnnotateImageBenchmark) {
