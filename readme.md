@@ -1,22 +1,42 @@
 # Progress
 
 - [x] Camera Capture
-  - [x] Open camera
-  - [x] Grab images and tag time stamp
+  - [x] Basic
+    - <del>Open camera</del>
+    - <del>Set configs</del>
+  - [ ] (Buggy) Image Capture
+    - <del>Pixel Format</del>
+    - Grab Image
 - [x] Serial port
   - [x] Connection
-  - [x] Read and send
+  - [x] Read
+  - [x] Send
   - [ ] Reconection
-- [ ] Detector
-  - [x] Data flow
-  - [ ] Accuracy
-- [ ] Policy
-  - [ ] armor selection
+- [x] Detector
+  - [x] Basic
+    - <del>Data flow tested</del>
+    - Able to return 2D coordinate
+  - [ ] Accuracy?
+    - Traditional CV Method
+- [x] Policy
+  - [ ] Armor Selection
+    - <del>Simple</del>
+    - Complicated
 - [ ] Transform
-  - [ ] Cordinate Transform
-  - [ ] Solve PNP
+  - **[Warning] Untested**
+  - **(Part of)**
+  - [x] Util functions
+  - [x] Cordinate Transform
+  - [x] Solve PNP
 - [ ] Tracker
-  - [x] EKF
+  - **[Warning] Untested**
+  - **(Part of)**
+  - [x] KF
+  - [x] **(Part of)** EKF
+- [ ] Firing
+  - **Untested**
+  - [ ] Simple control
+  - [ ] Serial Port Control
 
 # Overview
 
