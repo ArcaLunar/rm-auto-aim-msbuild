@@ -193,9 +193,18 @@ void HikCamera::setup(const std::string &config_path) {
 
     //* Pixel Format
     if (config.pixel_format == "BayerRG8") {
-        SET_PARAM(EnumValue, PixelType_Gvsp_BayerRG8, "PixelFormat");
+        if (MV_OK != MV_CC_SetEnumValue(this->handle_, "PixelFormat", PixelType_Gvsp_BayerRG8)) {
+            SPDLOG_LOGGER_CRITICAL(this->log_, "setting pixel format BayerRG8 failed");
+            exit(-1);
+        } else
+            SPDLOG_LOGGER_INFO(this->log_, "setting pixel format BayerRG8 succeeded");
     } else if (config.pixel_format == "BayerGB8") {
-        SET_PARAM(EnumValue, PixelType_Gvsp_BayerGB8, "PixelFormat");
+        if (MV_OK != MV_CC_SetEnumValue(this->handle_, "PixelFormat", PixelType_Gvsp_BayerGB8)) {
+            SPDLOG_LOGGER_CRITICAL(this->log_, "setting pixel format BayerGB8 failed");
+            exit(-1);
+        } else {
+            SPDLOG_LOGGER_INFO(this->log_, "setting pixel format BayerGB8 succeeded");
+        }
     } else {
         SPDLOG_LOGGER_CRITICAL(this->log_, "unsupported pixel format");
         exit(-1);
