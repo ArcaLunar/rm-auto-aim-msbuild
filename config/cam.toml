@@ -1,7 +1,11 @@
 source_type = "hikcamera"
 path_to_source = "1"
+
+# config for hikcamera
 width = 1440
 height = 1080
+offset_x = 0
+offset_y = 0
 auto_exposure = 0
 exposure_time = 5000
 adjustable_gamma = true

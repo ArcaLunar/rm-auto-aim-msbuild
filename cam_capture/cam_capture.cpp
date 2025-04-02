@@ -167,15 +167,23 @@ CameraConfig HikCamera::load_config(const std::string &config_path) {
     try {
         T = toml::parse_file(config_path);
 
-        config.pixel_format                  = T["pixel_format"].value_or("BayerRG8");
-        config.adc_bit_depth                 = T["adc_bit_depth"].value_or(2);
-        config.trigger_mode                  = T["trigger_mode"].value_or(0);
-        config.auto_exposure                 = T["auto_exposure"].value_or(0);
-        config.exposure_time                 = T["exposure_time"].value_or(1000);
+        config.pixel_format  = T["pixel_format"].value_or("BayerRG8");
+        config.adc_bit_depth = T["adc_bit_depth"].value_or(2);
+        config.trigger_mode  = T["trigger_mode"].value_or(0);
+
+        config.auto_exposure = T["auto_exposure"].value_or(0);
+        config.exposure_time = T["exposure_time"].value_or(1000);
+
         config.gain_auto                     = T["gain_auto"].value_or(0);
         config.adjustable_gamma              = T["adjustable_gamma"].value_or(true);
         config.gamma                         = T["gamma"].value_or(0.5);
         config.acquisition_frame_rate_enable = T["acquisition_frame_rate_enable"].value_or(false);
+
+        config.height   = T["height"].value_or(1080);
+        config.width    = T["width"].value_or(1440);
+        config.offset_x = T["offset_x"].value_or(0);
+        config.offset_y = T["offset_y"].value_or(0);
+
     } catch (const toml::parse_error &e) {
         SPDLOG_LOGGER_ERROR(this->log_, "error parsing config file: {}, using fallback", e.what());
     }
@@ -226,6 +234,11 @@ void HikCamera::setup(const std::string &config_path) {
         SET_PARAM(EnumValue, 1, "GammaSelector");
         SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
+    //* Height, Width, OffsetX, OffsetY
+    SET_PARAM(IntValue, config.height, "Height");
+    SET_PARAM(IntValue, config.width, "Width");
+    SET_PARAM(IntValue, config.offset_x, "OffsetX");
+    SET_PARAM(IntValue, config.offset_y, "OffsetY");
 
 #undef SET_PARAM
 }
@@ -252,12 +265,18 @@ cv::Mat HikCamera::__get_frame() {
         SPDLOG_LOGGER_INFO(
             this->log_,
             "retrieving image buffer, w={}, h={}",
-            this->buffer_.stFrameInfo.nWidth,
-            this->buffer_.stFrameInfo.nHeight
+            this->buffer_.stFrameInfo.nExtendWidth,
+            this->buffer_.stFrameInfo.nExtendHeight
         );
-    auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
-    MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
-    return img;
+
+    if (this->buffer_.pBufAddr != nullptr) {
+        auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
+        n_ret    = MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
+        if (n_ret != MV_OK)
+            SPDLOG_LOGGER_ERROR(this->log_, "failed to free buffer");
+        return img;
+    } else
+        return cv::Mat();
 }
 
 RawFrameInfo HikCamera::get_frame() {

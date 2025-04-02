@@ -13,16 +13,16 @@ constexpr double kRadianToDegree = 57.295779513082320876798154814105;
 constexpr bool SuppressValidationDebug = true; // 抑制 armor.cpp 里的 spdlog 输出（减少日志数量）
 
 constexpr bool InitializationDebug
-    = true && EnableAllDebug;                         // set to `false` to disable debug messages for initialization
-constexpr bool CameraDebug = false && EnableAllDebug; // set to `false` to disable debug messages from camera capture
+    = true && EnableAllDebug;                            // set to `false` to disable debug messages for initialization
+constexpr bool CameraDebug     = true && EnableAllDebug; // set to `false` to disable debug messages from camera capture
 constexpr bool SerialPortDebug = false && EnableAllDebug; // set to `false` to disable debug messages from serial port
 constexpr bool ProducerConsumerModelDebug
-    = false && EnableAllDebug; // set to `false` to disable messages from work_queue.hpp
-constexpr bool DetectorDebug   = false && EnableAllDebug;
-constexpr bool ClassifierDebug = false && EnableAllDebug;
+    = true && EnableAllDebug; // set to `false` to disable messages from work_queue.hpp
+constexpr bool DetectorDebug   = true && EnableAllDebug;
+constexpr bool ClassifierDebug = true && EnableAllDebug;
 constexpr bool PublisherDebug  = true && EnableAllDebug;
 constexpr bool DisplayAnnotatedImageDebug = true && EnableAllDebug; // 识别完装甲板后是否显示标注装甲板的图像
-constexpr bool PublisherDiaplayImageDebug = false && EnableAllDebug;
+constexpr bool PublisherDiaplayImageDebug = true && EnableAllDebug;
 
 constexpr bool AnnotateImageBenchmark = true;
 
