@@ -6,7 +6,7 @@ import random
 # 使用 /dev/pty/2 作为接收数据串口，/dev/pty/3 作为发送数据串口
 ser = serial.Serial(
     port="/dev/pts/3",
-    baudrate=9600,
+    baudrate=460800,
     bytesize=8,
     parity="N",
     stopbits=1,

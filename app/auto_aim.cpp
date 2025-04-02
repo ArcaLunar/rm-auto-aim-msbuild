@@ -3,7 +3,7 @@
 #include <map>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
-#define PWD std::string("/media/arca/ArcaEXT4/codebases/pred_v2/")
+#define PWD std::string("../../")
 #define CONFIG_PATH std::string(PWD + "config/")
 
 #include <boost/exception/diagnostic_information.hpp>
