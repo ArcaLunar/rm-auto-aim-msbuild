@@ -167,14 +167,15 @@ CameraConfig HikCamera::load_config(const std::string &config_path) {
     try {
         T = toml::parse_file(config_path);
 
-        config.pixel_format = T["pixel_format"].value_or("BayerRG8");
-        // config.adc_bit_depth    = T["adc_bit_depth"].value_or(8);
-        config.trigger_mode     = T["trigger_mode"].value_or(0);
-        config.auto_exposure    = T["auto_exposure"].value_or(0);
-        config.exposure_time    = T["exposure_time"].value_or(1000);
-        config.gain_auto        = T["gain_auto"].value_or(0);
-        config.adjustable_gamma = T["adjustable_gamma"].value_or(true);
-        config.gamma            = T["gamma"].value_or(0.5);
+        config.pixel_format                  = T["pixel_format"].value_or("BayerRG8");
+        config.adc_bit_depth                 = T["adc_bit_depth"].value_or(2);
+        config.trigger_mode                  = T["trigger_mode"].value_or(0);
+        config.auto_exposure                 = T["auto_exposure"].value_or(0);
+        config.exposure_time                 = T["exposure_time"].value_or(1000);
+        config.gain_auto                     = T["gain_auto"].value_or(0);
+        config.adjustable_gamma              = T["adjustable_gamma"].value_or(true);
+        config.gamma                         = T["gamma"].value_or(0.5);
+        config.acquisition_frame_rate_enable = T["acquisition_frame_rate_enable"].value_or(false);
     } catch (const toml::parse_error &e) {
         SPDLOG_LOGGER_ERROR(this->log_, "error parsing config file: {}, using fallback", e.what());
     }
@@ -211,19 +212,19 @@ void HikCamera::setup(const std::string &config_path) {
     }
     //* Trigger mode
     SET_PARAM(EnumValue, config.trigger_mode, "TriggerMode");
-    //* PayLoad
-    // SET_PARAM(IntValue, config.payload_size, "PayloadSize");
     //* Depth
-    // SET_PARAM(EnumValue, config.adc_bit_depth, "ADCBitDepth");
+    SET_PARAM(EnumValue, config.adc_bit_depth, "ADCBitDepth");
     //* 设置曝光
     SET_PARAM(EnumValue, config.auto_exposure, "ExposureAuto");
     SET_PARAM(FloatValue, config.exposure_time, "ExposureTime");
     //* Gain
     SET_PARAM(EnumValue, config.gain_auto, "GainAuto");
+    SET_PARAM(FloatValue, 0, "Gain");
     //* Set Gamma
+    SET_PARAM(BoolValue, config.adjustable_gamma, "GammaEnable");
     if (config.adjustable_gamma) {
         SET_PARAM(EnumValue, 1, "GammaSelector");
-        // SET_PARAM(FloatValue, config.gamma, "Gamma");
+        SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
 
 #undef SET_PARAM

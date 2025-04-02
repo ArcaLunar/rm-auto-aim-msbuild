@@ -1,15 +1,12 @@
 source_type = "hikcamera"
 path_to_source = "1"
-
 width = 1440
 height = 1080
-
 auto_exposure = 0
 exposure_time = 5000
-
 adjustable_gamma = true
 gamma = 0.5
-
 gain_auto = 0
-
 pixel_format = "BayerRG8"
+acquisition_frame_rate_enable = false
+adc_bit_depth = 2
