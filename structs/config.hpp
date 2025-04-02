@@ -4,6 +4,9 @@
 constexpr double kDegreeToRadian = 0.017453292519943295769236907684886;
 constexpr double kRadianToDegree = 57.295779513082320876798154814105;
 
+#define PWD std::string("/media/arca/ArcaEXT4/codebases/pred_v2/")
+#define CONFIG_PATH std::string(PWD + "config/")
+
 #define EnableAllDebug true
 
 //! 调试选项
