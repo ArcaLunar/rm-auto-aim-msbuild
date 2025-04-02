@@ -1,5 +1,4 @@
 #include "PixelType.h"
-#include <cstring>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include "cam_capture.hpp"
@@ -134,19 +133,26 @@ void HikCamera::open_camera() {
     SPDLOG_LOGGER_INFO(this->log_, "open succeed");
 }
 
-cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, unsigned char *img_data) {
+cv::Mat HikCamera::convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *pstImageInfo, MV_FRAME_OUT *pstImage) {
     cv::Mat result;
-    auto mark = pstImageInfo->enPixelType;
+    auto mark           = pstImageInfo->enPixelType;
+    auto channel_type   = CV_8UC3;
+    auto transform_type = cv::COLOR_BayerGB2RGB;
+    cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, channel_type, pstImage->pBufAddr);
 
-    if (mark == PixelType_Gvsp_BayerRG8) {
-        cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, CV_8UC1, img_data);
-        cv::cvtColor(src, result, cv::COLOR_BayerRG2BGR);
-    } else if (mark == PixelType_Gvsp_BayerGB8) {
-        cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, CV_8UC1, img_data);
-        cv::cvtColor(src, result, cv::COLOR_BayerGB2BGR);
-    } else if (mark == PixelType_Gvsp_BGR8_Packed) {
-        cv::Mat src(pstImageInfo->nHeight, pstImageInfo->nWidth, CV_8UC3, img_data);
-        result = src;
+    switch (mark) {
+        case PixelType_Gvsp_BayerRG8: {
+            cv::cvtColor(src, result, cv::COLOR_BayerRG2BGR);
+            break;
+        }
+        case PixelType_Gvsp_BayerGB8: {
+            cv::cvtColor(src, result, cv::COLOR_BayerGB2BGR);
+            break;
+        }
+        case PixelType_Gvsp_BGR8_Packed: {
+            result = src;
+            break;
+        }
     }
 
     return result;
@@ -220,15 +226,6 @@ void HikCamera::setup(const std::string &config_path) {
         // SET_PARAM(FloatValue, config.gamma, "Gamma");
     }
 
-    //* get payload size
-    MVCC_INTVALUE stParam;
-    if (MV_CC_GetIntValue(this->handle_, "PayloadSize", &stParam) != MV_OK) {
-        SPDLOG_LOGGER_CRITICAL(this->log_, "error getting payload size");
-        exit(-1);
-    }
-    SPDLOG_LOGGER_INFO(this->log_, "payload size: {}", stParam.nCurValue);
-    this->payload_size_ = stParam.nCurValue;
-
 #undef SET_PARAM
 }
 
@@ -240,22 +237,11 @@ void HikCamera::initialize_image_retrieval() {
         exit(-1);
     }
     SPDLOG_LOGGER_INFO(this->log_, "initialization succeed");
-
-    // init buffer
-    memset(&this->frame_info_, 0, sizeof(MV_FRAME_OUT_INFO_EX));
-    SPDLOG_LOGGER_INFO(this->log_, "memory allocated for frame info");
-    this->image_buffer_ = std::make_unique<unsigned char[]>(this->payload_size_);
-    if (this->image_buffer_ == nullptr) {
-        SPDLOG_LOGGER_CRITICAL(this->log_, "error allocating memory for image buffer");
-        exit(-1);
-    }
-    SPDLOG_LOGGER_INFO(this->log_, "memory allocated for image buffer");
 }
 
 cv::Mat HikCamera::__get_frame() {
-    int n_ret = MV_CC_GetOneFrameTimeout(
-        this->handle_, this->image_buffer_.get(), this->payload_size_, &this->frame_info_, 100000
-    );
+    std::memset(&this->buffer_, 0, sizeof(MV_FRAME_OUT));
+    int n_ret = MV_CC_GetImageBuffer(this->handle_, &this->buffer_, 1000);
     if (n_ret != MV_OK) {
         SPDLOG_LOGGER_ERROR(this->log_, "failed to get image buffer, no data");
         return cv::Mat();
@@ -263,9 +249,13 @@ cv::Mat HikCamera::__get_frame() {
 
     if constexpr (CameraDebug)
         SPDLOG_LOGGER_INFO(
-            this->log_, "retrieving image buffer, w={}, h={}", this->frame_info_.nWidth, this->frame_info_.nHeight
+            this->log_,
+            "retrieving image buffer, w={}, h={}",
+            this->buffer_.stFrameInfo.nWidth,
+            this->buffer_.stFrameInfo.nHeight
         );
-    auto img = convert_raw_to_mat(&this->frame_info_, this->image_buffer_.get());
+    auto img = convert_raw_to_mat(&this->buffer_.stFrameInfo, &this->buffer_);
+    MV_CC_FreeImageBuffer(this->handle_, &this->buffer_);
     return img;
 }
 

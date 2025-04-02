@@ -1,9 +1,8 @@
 port_name = "/dev/pts/4"
-baud_rate = 460800
+baud_rate = 9600 # 460800
 parity = 0
 data_bit = 8
 stop_bit = 1
 sync = 1
-send_interval = 0        #! (milliseconds)
-
-alternative_port = ["/dev/ttyACM0", "/dev/ttyACM1"]
+send_interval = 0 #! (milliseconds)
+alternative_ports = ["/dev/pts/4", "/dev/pts/3"]

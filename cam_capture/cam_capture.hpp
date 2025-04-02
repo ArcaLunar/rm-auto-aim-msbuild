@@ -90,13 +90,9 @@ class HikCamera {
     /// \brief 设备列表
     MV_CC_DEVICE_INFO_LIST devicelist_;
     unsigned int camIndex;
-    CameraConfig config_;
-
     void *handle_;
-    MV_FRAME_OUT_INFO_EX frame_info_;
-    unsigned int payload_size_;
-    std::unique_ptr<unsigned char[]> image_buffer_{nullptr};
-
+    CameraConfig config_;
+    MV_FRAME_OUT buffer_;
     std::shared_ptr<spdlog::logger> log_;
 
   public:
@@ -105,7 +101,7 @@ class HikCamera {
     /// \brief 获取相机的处理 agent
     void *get_handle() { return handle_; }
     /// \brief （辅助函数）将捕获的图像转换为 OpenCV 矩阵
-    cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, unsigned char *);
+    cv::Mat convert_raw_to_mat(MV_FRAME_OUT_INFO_EX *, MV_FRAME_OUT *);
 
     /**
      * @brief 获取一帧 BGR 图像，打上时间戳
