@@ -1,5 +1,3 @@
-#include "config.hpp"
-#include "tracker.hpp"
 #include <map>
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
@@ -10,12 +8,14 @@
 #include <spdlog/spdlog.h>
 
 #include "cam_capture.hpp"
+#include "config.hpp"
 #include "firing.hpp"
 #include "policy.hpp"
 #include "pose_convert.hpp"
 #include "publisher.hpp"
 #include "serial_port.hpp"
 #include "structs.hpp"
+#include "tracker.hpp"
 #include "work_queue.hpp"
 
 int main() {
