@@ -29,7 +29,7 @@ AutoAim::Classifier::Classifier(const std::string &config_path) {
         if constexpr (InitializationDebug)
             spdlog::info("loading model from {}", model_path.value());
 
-        net_ = cv::dnn::readNetFromONNX(model_path.value());
+        net_ = cv::dnn::readNetFromONNX(PWD + model_path.value());
 
         // 提取识别标签
         if (toml::array *arr = labels.as_array()) {
