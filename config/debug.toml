@@ -1,3 +1,7 @@
 [camera]
 initialization = true
 capture = true
+
+[port]
+initialization = true
+inspect_data = true

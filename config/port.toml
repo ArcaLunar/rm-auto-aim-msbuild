@@ -1,0 +1,10 @@
+baudrate = 406800
+ports = ["/dev/ttyACM0", "/dev/ttyACM1"]
+databit = 8
+parity = "none"
+stopbit = 1
+sync = true
+send_interval = 0
+
+startbyte = 0x3A
+endbyte = 0xAA

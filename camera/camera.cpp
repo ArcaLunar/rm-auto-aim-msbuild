@@ -124,7 +124,7 @@ void HikCamera::set_configs(std::string path) {
     //~ 10. gamma
     if (gamma_enable) {
         int gamma_select = config["gamma_select"].value_or(1);
-        mvcheck(MV_CC_SetEnumValue, this->handle, "GammaSelect", gamma_select);
+        mvcheck(MV_CC_SetEnumValue, this->handle, "GammaSelector", gamma_select);
 
         int gamma = config["gamma"].value_or(0.5);
         mvcheck(MV_CC_SetFloatValue, this->handle, "Gamma", gamma);

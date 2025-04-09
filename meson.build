@@ -33,5 +33,6 @@ subdir('debug')
 subdir('structs')
 
 subdir('camera')
+subdir('port')
 
 subdir('test')
