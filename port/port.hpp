@@ -2,9 +2,11 @@
 #define __PORT_HPP__
 
 #include "boost/asio.hpp"
+#include "circular_buffer.hpp"
 #include "structs.hpp"
 #include <array>
 #include <boost/asio/io_service.hpp>
+#include <chrono>
 #include <memory>
 
 class SerialPort {
@@ -29,10 +31,16 @@ class SerialPort {
     std::string port_name;
     std::vector<std::string> port_options; // alternative port options
 
-    bool port_ok;
+    PortConfig cfg;
+    bool port_ok{false};
+
+    u8 updated{0};
+    std::chrono::system_clock::time_point last_recv;
+
+    u8 send_msg_buffer[kSendBufferSize];
+    CircularBuffer<RecvMsgBuffer> recv_buffer{kRecvMsgCount};
 
   protected:
-    void _set_options();
 };
 
 #endif

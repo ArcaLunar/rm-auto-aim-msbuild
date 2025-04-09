@@ -87,4 +87,13 @@ struct VisionPLCRecvMsg {
 };
 #pragma pack(pop)
 
+struct PortConfig {
+    int baudrate;
+    int stopbit;
+    int databit;
+    int parity;
+    
+    u8 startbyte, endbyte;
+};
+
 #endif
