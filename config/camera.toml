@@ -1,0 +1,15 @@
+trigger_mode = 0                      # MV_TRIGGER_MODE_OFF
+acquisition_frame_rate_enable = false # disable acq rate
+pixel_format = "BayerRG8"             # pixel format
+adc_bit_depth = 2
+exposure_auto = 0
+exposure_time = 1000
+gain_auto = 0
+gain = 0
+gamma_enable = true
+gamma = 0.5
+
+width = 1440
+height = 1080
+offset_x = 0
+offset_y = 0

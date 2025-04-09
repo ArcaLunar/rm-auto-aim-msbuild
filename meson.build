@@ -10,54 +10,28 @@ project(
 )
 
 ##
-headers = [include_directories('./structs')]
 
 ### Dependency declaration
 spdlog = dependency('spdlog')
 opencv = dependency('opencv4')
 eigen = dependency('eigen3')
 toml = subproject('tomlplusplus', default_options: ['default_library=static']).get_variable('tomlplusplus_dep')
-boost = dependency(
-    'boost',
-    modules: [
-        'system',
-    ],
-)
+boost = dependency('boost')
 
-mvs = subproject('mvs')
-mvs_dep = mvs.get_variable('mvs_dep')
-# tf = subproject('tf3d')
-# tf_dep = tf.get_variable('tf_dep')
+mvs = subproject('mvs').get_variable('mvs_dep')
 
 all_dep = [
     spdlog,
     opencv,
     eigen,
-    mvs_dep,
+    mvs,
     boost,
     toml,
-    # tf_dep,
 ]
 
-### Directories
-binary_dir = './output'
-
-# INSTALL Configs
-install_subdir(
-    'config',
-    install_dir: get_option('prefix'),
-)
-
-### Structs
+subdir('debug')
 subdir('structs')
-subdir('work_queue')
-subdir('detector')
-subdir('cam_capture')
-subdir('serialport')
-subdir('transform')
-subdir('tracker')
-subdir('policy')
-subdir('firing')
+
+subdir('camera')
 
 subdir('test')
-subdir('app')
