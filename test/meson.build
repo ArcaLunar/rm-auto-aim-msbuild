@@ -1,4 +1,6 @@
-gdebug = executable('gdebug', 'gdebug.cpp', dependencies: all_dep)
+gdebug = executable('test_debug', 'gdebug.cpp', dependencies: all_dep)
+tcamera = executable('test_camera', 'test_camera.cpp', dependencies: all_dep)
 
 # generate tests
-test('gdebug', gdebug)
+test('test_debug', gdebug)
+test('test_camera', tcamera)
