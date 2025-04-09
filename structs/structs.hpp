@@ -77,8 +77,14 @@ struct VisionPLCRecvMsg {
         u8 hero : 1;
         u8 engineer : 1;
         u8 infantry3 : 1;
+        u8 infantry4 : 1;
+        u8 infantry5 : 1;
+        u8 sentry : 1;
+        u8 outpost : 1;
+        u8 base : 1;
     } shoot_decision;
     u8 end;
 };
+#pragma pack(pop)
 
 #endif
