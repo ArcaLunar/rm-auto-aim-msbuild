@@ -12,8 +12,8 @@ struct DebugOptions {
         bool capture        = false;
     } camera;
     struct {
-        bool initialization = false;
-        bool inspect_data   = false;
+        bool initialization = true;
+        bool inspect_data   = true;
     } port;
 
     DebugOptions() {

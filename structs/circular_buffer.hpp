@@ -12,10 +12,10 @@ class CircularBuffer {
   public:
     explicit CircularBuffer(size_t size = 1) : data(std::unique_ptr<T[]>(new T[size])), max_size{size} {}
 
-    void push(const T &item) {
+    void push(T item) {
         std::lock_guard<std::mutex> lock(this->mtx);
 
-        this->data[head] = std::move(item);
+        this->data[head] = item;
         if (this->full)
             this->tail = (this->tail + 1) % this->max_size;
         this->head = (this->head + 1) % this->max_size;
