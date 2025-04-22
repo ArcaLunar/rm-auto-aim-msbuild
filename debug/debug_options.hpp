@@ -8,8 +8,8 @@
 struct DebugOptions {
     // *======== Debug Config Area ========* //
     struct {
-        bool initialization = false;
-        bool capture        = false;
+        bool initialization = true;
+        bool capture        = true;
     } camera;
     struct {
         bool initialization = true;

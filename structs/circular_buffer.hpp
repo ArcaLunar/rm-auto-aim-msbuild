@@ -40,7 +40,6 @@ class CircularBuffer {
     }
 
     bool is_empty() const {
-        std::lock_guard<std::mutex> lock(this->mtx);
         return (!this->full && (this->head == this->tail));
     }
 

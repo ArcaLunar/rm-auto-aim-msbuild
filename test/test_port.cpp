@@ -2,7 +2,7 @@
 #include <thread>
 
 int main() {
-    SerialPort port("../../config/port.toml");
+    SerialPort port("../config/port.toml");
 
     std::thread port_reader(&SerialPort::read_raw, &port);
     std::thread port_processor(&SerialPort::process_raw, &port);
