@@ -1,29 +1,32 @@
 #include "port.hpp"
 #include "debug_options.hpp"
 #include "structs.hpp"
-#include "toml++/impl/parser.hpp"
-#include "toml++/impl/table.hpp"
+#include <boost/asio.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/serial_port_base.hpp>
+#include <boost/system/error_code.hpp>
 #include <chrono>
 #include <cstring>
+#include <spdlog/fmt/bin_to_hex.h>
 #include <spdlog/spdlog.h>
-#include <sstream>
 #include <stdexcept>
+#include <thread>
+#include <toml++/toml.hpp>
 
+// Check if DebugOptions is defined, if not provide default implementation
 extern DebugOptions options;
 
 SerialPort::SerialPort(std::string path) : port{ctx}, timer{ctx}, raw_cbuffer{kRecvMsgCount} {
-    spdlog::info("initializing serial port");
+    spdlog::info("Initializing serial port");
     last_recv = std::chrono::steady_clock::now();
 
     if (options.port.initialization)
-        spdlog::info("reading config from {}", path);
+        spdlog::info("Reading config from {}", path);
 
     try {
         toml::table config = toml::parse_file(path);
 
-        // * read config from file
+        // Read configuration from file
         cfg.baudrate  = config["baudrate"].value_or(460800);
         cfg.databit   = config["databit"].value_or(8);
         cfg.stopbit   = config["stopbit"].value_or(1);
@@ -35,16 +38,26 @@ SerialPort::SerialPort(std::string path) : port{ctx}, timer{ctx}, raw_cbuffer{kR
         if (const auto *arr = ports.as_array()) {
             for (const auto &port : *arr)
                 this->port_options.push_back(port.as_string()->get());
+        } else {
+            // Use the default port list if none provided in config
+            this->port_options = kAlternativePorts;
         }
-        this->port_name = this->port_options[0];
 
-    } catch (std::runtime_error &e) {
+        // Use the first port in the list
+        if (!this->port_options.empty()) {
+            this->port_name = this->port_options[0];
+        } else {
+            spdlog::error("No serial ports defined in configuration");
+            throw std::runtime_error("No serial ports defined");
+        }
+
+    } catch (const std::exception &e) {
         spdlog::error("Error in initializing port: {}", e.what());
-        throw e;
+        throw;
     }
 
     if (options.port.initialization)
-        spdlog::info("configuration loaded, setting options");
+        spdlog::info("Configuration loaded, setting options");
 
     this->open_port();
 }
@@ -52,122 +65,191 @@ SerialPort::SerialPort(std::string path) : port{ctx}, timer{ctx}, raw_cbuffer{kR
 void SerialPort::open_port() {
     using namespace boost::asio;
 
-    if (options.port.initialization)
-        spdlog::info("port name {} initialized with io service", this->port_name);
+    try {
+        if (options.port.initialization)
+            spdlog::info("Attempting to open port {} with io service", this->port_name);
 
-    //~ Set options for port
-    this->port.open(this->port_name);
-    //~ baud rate
-    this->port.set_option(serial_port_base::baud_rate(this->cfg.baudrate));
+        // Set options for port
+        this->port.open(this->port_name);
 
-    //~ data bit
-    this->port.set_option(serial_port_base::character_size(this->cfg.databit));
+        // Configure port parameters
+        this->port.set_option(serial_port_base::baud_rate(this->cfg.baudrate));
+        this->port.set_option(serial_port_base::character_size(this->cfg.databit));
 
-    //~ stop bit
-    this->port.set_option(serial_port_base::stop_bits(
-        this->cfg.stopbit == 1 ? serial_port_base::stop_bits::one : serial_port_base::stop_bits::two
-    ));
-    //~ parity
-    this->port.set_option(serial_port_base::parity(
-        this->cfg.parity == 0   ? serial_port_base::parity::none
-        : this->cfg.parity == 1 ? serial_port_base::parity::odd
-                                : serial_port_base::parity::even
-    ));
-    this->port.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+        // Configure stop bits
+        this->port.set_option(serial_port_base::stop_bits(
+            this->cfg.stopbit == 1 ? serial_port_base::stop_bits::one : serial_port_base::stop_bits::two
+        ));
 
-    if (options.port.initialization) {
-        spdlog::info("baudrate: {}", this->cfg.baudrate);
-        spdlog::info("databit: {}", this->cfg.databit);
-        spdlog::info("stopbit: {}", this->cfg.stopbit);
-        spdlog::info("parity: {}", this->cfg.parity);
-        spdlog::info("endbyte: {:2X}", (int)this->cfg.endbyte);
-        spdlog::info("startbyte: {:2X}", (int)this->cfg.startbyte);
+        // Configure parity
+        this->port.set_option(serial_port_base::parity(
+            this->cfg.parity == 0   ? serial_port_base::parity::none
+            : this->cfg.parity == 1 ? serial_port_base::parity::odd
+                                    : serial_port_base::parity::even
+        ));
+
+        // Disable flow control
+        this->port.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+
+        if (options.port.initialization) {
+            spdlog::info("Serial port parameters:");
+            spdlog::info("  Baudrate: {}", this->cfg.baudrate);
+            spdlog::info("  Data bits: {}", this->cfg.databit);
+            spdlog::info("  Stop bits: {}", this->cfg.stopbit);
+            spdlog::info("  Parity: {}", this->cfg.parity);
+            spdlog::info("  Start byte: 0x{:02X}", static_cast<int>(this->cfg.startbyte));
+            spdlog::info("  End byte: 0x{:02X}", static_cast<int>(this->cfg.endbyte));
+        }
+
+        spdlog::info("Port options successfully set");
+        this->port_ok = true;
+    } catch (const boost::system::system_error &e) {
+        spdlog::error("Failed to open port {}: {}", this->port_name, e.what());
+        this->port_ok = false;
     }
-
-    spdlog::info("port options successfully set");
-    this->port_ok = true;
 }
 
 void SerialPort::close_port() {
     if (this->port.is_open()) {
-        this->port.cancel();
-        this->port.close();
+        boost::system::error_code ec;
+        ec = this->port.cancel(ec);
+        if (ec) {
+            spdlog::error("Error cancelling port operations: {}", ec.message());
+        }
+
+        ec = this->port.close(ec);
+        if (ec) {
+            spdlog::error("Error closing port: {}", ec.message());
+        }
         this->timer.cancel();
 
-        spdlog::info("serial port closed");
+        spdlog::info("Serial port closed");
+        this->port_ok = false;
+    }
+}
+
+bool SerialPort::send_message(const VisionPLCSendMsg &payload) {
+    if (!this->port_ok || !this->port.is_open()) {
+        spdlog::error("Port is not ready for sending");
+        return false;
+    }
+
+    // Create a local copy of the payload and update the flag
+    VisionPLCSendMsg msg = payload;
+    this->updated        = 1 - this->updated; // Toggle between 0 and 1
+    msg.flag_updated     = this->updated;
+
+    // Copy to send buffer
+    std::memcpy(this->send_buffer.data(), &msg, kSendMsgSize);
+
+    // Debug output if enabled
+    if (options.port.inspect_data) {
+        spdlog::info(
+            "Sending data: {:X:n}", spdlog::to_hex(this->send_buffer.data(), this->send_buffer.data() + kSendMsgSize)
+        );
+    }
+
+    try {
+        // Write the data to the serial port
+        size_t bytes_written
+            = boost::asio::write(this->port, boost::asio::buffer(this->send_buffer.data(), kSendMsgSize));
+        return bytes_written == kSendMsgSize;
+    } catch (const boost::system::system_error &e) {
+        spdlog::error("Failed to send message: {}", e.what());
+        return false;
+    }
+}
+
+void SerialPort::test_send() {
+    VisionPLCSendMsg msg;
+    std::array<u8, kSendMsgSize> send_buffer;
+    while (true) {
+        for (auto i : send_buffer)
+            i = 89;
+        std::memcpy(&msg, send_buffer.data(), kSendMsgSize);
+        msg.flag_updated = 1 - this->updated; // Toggle between 0 and 1
+
+        send_message(msg);
     }
 }
 
 void SerialPort::read_raw() {
     RawMessage raw;
-    spdlog::info("(thread) reading raw data from port ...");
+    spdlog::info("(thread) Reading raw data from port...");
+
     while (true) {
         raw.fill(0);
-        if (!this->port.is_open()) {
-            spdlog::error("port is not ready");
+        if (!this->port_ok || !this->port.is_open()) {
+            spdlog::error("Port is not ready for reading");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
 
-        // read from port
-        auto size_data = boost::asio::read(this->port, boost::asio::buffer(raw.data(), kRecvMsgSize));
+        try {
+            // Read data from the port
+            size_t bytes_read = boost::asio::read(this->port, boost::asio::buffer(raw.data(), kRecvMsgSize));
 
-        if (size_data > 0) {
-            // debug
-            if (options.port.inspect_data) {
-                spdlog::info("reveiced {} bytes", size_data);
-                std::stringstream ss;
-                for (int i = 0; i < size_data; ++i)
-                    ss << "[" << i << "]=" << std::hex << std::setw(2) << std::setfill('0') << (int)raw[i] << " ";
-                spdlog::info("raw data: {}", ss.str());
+            if (bytes_read > 0) {
+                // Debug output if enabled
+                if (options.port.inspect_data) {
+                    spdlog::info("Received {} bytes", bytes_read);
+                    spdlog::info("Raw data: {:X:n}", spdlog::to_hex(raw.data(), raw.data() + bytes_read));
+                }
+
+                this->raw_cbuffer.push(raw);
+                this->last_recv = std::chrono::steady_clock::now();
             }
-
-            this->raw_cbuffer.push(raw);
-            this->last_recv = std::chrono::steady_clock::now();
+        } catch (const boost::system::system_error &e) {
+            spdlog::error("Error reading from port: {}", e.what());
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
+}
+
+bool SerialPort::verify(const RawMessage &msg) {
+    // Verify that the message follows the protocol format
+    if (msg[0] != cfg.startbyte || msg[kRecvMsgSize - 1] != cfg.endbyte) {
+        return false;
+    }
+
+    // Additional validation can be added here
+
+    return true;
 }
 
 void SerialPort::process_raw() {
     VisionPLCRecvMsg payload;
     RawMessage raw;
-    bool verdict = false;
-    raw.fill(0);
-    spdlog::info("(thread) processing raw data ...");
+    bool success = false;
+
+    spdlog::info("(thread) Processing raw data...");
+
     while (true) {
-        std::tie(raw, verdict) = this->raw_cbuffer.pop();
-        if (!verdict) {
-            spdlog::warn("no data yet");
+        // Get the next raw message from the buffer
+        std::tie(raw, success) = this->raw_cbuffer.pop();
+
+        if (!success) {
+            // No data available yet
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
+        // Process the raw message
         for (size_t i = 0; i < raw.size();) {
             size_t j = i + kRecvMsgSize;
             if (j > raw.size()) {
-                spdlog::warn("not enough data");
-                break;
+                break; // Not enough data
             }
 
-            // * Verify
-            if (j - i != sizeof(VisionPLCRecvMsg)) {
-                spdlog::warn("data size mismatch");
+            // Extract the message if it passes verification
+            if (verify(raw)) {
+                std::memcpy(&payload, raw.data() + i, kRecvMsgSize);
+                this->recv_cbuffer.push(payload);
+                i = j;
+            } else {
+                // Move one byte forward and continue scanning
                 i++;
-                continue;
-            } else if (raw.size() < sizeof(VisionPLCRecvMsg)) {
-                spdlog::warn("data size mismatch");
-                i++;
-                continue;
-            } else if (i > j or j > raw.size()) {
-                spdlog::warn("invalid data range");
-                i++;
-                continue;
-            } else if (raw[i] != this->cfg.startbyte or raw[j - 1] != this->cfg.endbyte) {
-                spdlog::warn("protocol check failed!");
-                i++;
-                continue;
             }
-            std::memcpy(&payload, raw.data() + i, kRecvMsgSize);
-            recv_cbuffer.push(payload);
-            i = j;
         }
     }
 }
@@ -177,34 +259,41 @@ void SerialPort::check_reconnect() {
     auto last_check = steady_clock::now();
 
     while (true) {
-        if (last_recv == steady_clock::time_point())
-            continue; // just received a message
+        if (last_recv == steady_clock::time_point()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue; // No messages received yet
+        }
 
         auto now      = steady_clock::now();
         auto duration = duration_cast<milliseconds>(now - last_recv);
 
-        if (duration.count() <= kTimeout)
-            continue; // did not exceed time out
+        if (duration.count() < kTimeout) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue; // Connection is still active
+        }
 
-        spdlog::error("port timeout, trying to reconnect ...");
+        spdlog::error("Connection lost, trying to reconnect...");
 
-        size_t idx = 0; // index for next port
+        size_t idx = 0;
         while (true) {
-            while (1000 > duration_cast<milliseconds>(steady_clock::now() - last_check).count())
+            // Wait at least 1 second between reconnection attempts
+            while (1000 > duration_cast<milliseconds>(steady_clock::now() - last_check).count()) {
                 std::this_thread::yield();
+            }
 
             last_check = steady_clock::now();
 
+            // Try the next port in the list
             this->port_name = this->port_options[idx];
             idx             = (idx + 1) % this->port_options.size();
 
-            this->port_ok = false;
-            this->close_port();
+            spdlog::info("Attempting to connect to {}", this->port_name);
 
+            this->close_port();
             this->open_port();
+
             if (this->port_ok) {
-                spdlog::info("successfully connected to port {}", this->port_name);
-                this->port_ok = true;
+                spdlog::info("Successfully connected to {}", this->port_name);
                 break;
             }
         }

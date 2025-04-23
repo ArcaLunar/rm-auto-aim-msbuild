@@ -1,5 +1,5 @@
 baudrate = 460800
-ports = ["/dev/ttyACM0", "/dev/ttyACM1"]
+ports = ["/home/arca/port2"]
 databit = 8
 parity = 0
 stopbit = 1
