@@ -80,12 +80,34 @@ struct VisionPLCRecvMsg {
         u8 infantry4 : 1;
         u8 infantry5 : 1;
         u8 sentry : 1;
-        u8 outpost : 1;
+        u8 outpost : 1  ;
         u8 base : 1;
     } shoot_decision;
     u8 end;
 };
 #pragma pack(pop)
+
+#pragma pack(push, 1)
+struct SentryVisionRecvMsg {
+    u8 start;
+    float roll;
+    float pitch;
+    float yaw;
+    u8 ally_color;
+    u8 unknown_byte_wtf;
+    u8 vision_mode;
+    struct armor_select_t {
+        u8 hero : 1;
+        u8 engineer : 1;
+        u8 infantry3 : 1;
+        u8 infantry4 : 1;
+        u8 infantry5 : 1;
+        u8 sentry : 1;
+        u8 outpost : 1  ;
+        u8 base : 1;
+    } shoot_decision;
+    u8 end;
+};
 
 struct PortConfig {
     int baudrate;

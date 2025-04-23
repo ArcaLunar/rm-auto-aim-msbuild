@@ -33,9 +33,12 @@ int main() {
             }
 
             // display image
-            cv::imshow("Camera", frame.image);
+            // cv::imshow("Camera", frame.image);
             auto end_time = std::chrono::system_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+            // print some stats
+            spdlog::info("frame size: {}x{}", frame.image.cols, frame.image.rows);
 
             spdlog::info("capture and display used {} ms", duration.count());
 
