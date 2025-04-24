@@ -49,7 +49,7 @@ cv::Mat convert_to_rgb(MV_FRAME_OUT *frame) {
         cv::cvtColor(src, result, cv::COLOR_BayerRG2RGB);
     } else if (info.enPixelType == PixelType_Gvsp_RGB8_Packed) {
         cv::Mat src(info.nExtendHeight, info.nWidth, CV_8UC3, frame->pBufAddr);
-        result = src.clone();
+        result = src;
     } else {
         spdlog::error("Unsupported pixel format");
         return cv::Mat();
@@ -62,12 +62,26 @@ RawImageFrame HikCamera::get_frame() {
 
     memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
     // wait for 1 sec, capture image
+    auto start = std::chrono::steady_clock::now();
     spd_wrapper(mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
+    auto end      = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    spdlog::warn("getting image buffer requires {} ms", duration);
 
-    result.image     = convert_to_rgb(&this->frame);     // convert to cv::Mat
+    start        = std::chrono::steady_clock::now();
+    result.image = convert_to_rgb(&this->frame); // convert to cv::Mat
+    end          = std::chrono::steady_clock::now();
+    duration     = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    spdlog::warn("converting image buffer requires {} ms", duration);
     result.timestamp = std::chrono::system_clock::now(); // assign current time
 
-    spd_wrapper(mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame); // free buffer
+    if (this->frame.pBufAddr != nullptr) {
+        start = std::chrono::steady_clock::now();
+        spd_wrapper(mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame); // free buffer
+        end   = std::chrono::steady_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        spdlog::warn("freeing image buffer requires {} ms", duration);
+    }
     return result;
 }
 
@@ -102,12 +116,12 @@ void HikCamera::set_configs(std::string path) {
     mvcheck(MV_CC_SetEnumValue, this->handle, "ADCBitDepth", adc_bit_depth);
 
     //~ 5. exposure auto
-    int exposure_auto = config["exposure_auto"].value_or(0);
-    mvcheck(MV_CC_SetEnumValue, this->handle, "ExposureAuto", exposure_auto);
+    // int exposure_auto = config["exposure_auto"].value_or(0);
+    // mvcheck(MV_CC_SetEnumValue, this->handle, "ExposureAuto", exposure_auto);
 
     //~ 6. exposure time
-    int exposure_time = config["exposure_time"].value_or(1000);
-    mvcheck(MV_CC_SetFloatValue, this->handle, "ExposureTime", exposure_time);
+    // int exposure_time = config["exposure_time"].value_or(1000);
+    // mvcheck(MV_CC_SetFloatValue, this->handle, "ExposureTime", exposure_time);
 
     //~ 7. gain auto
     int gain_auto = config["gain_auto"].value_or(0);

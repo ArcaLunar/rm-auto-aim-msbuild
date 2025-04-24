@@ -27,6 +27,15 @@
         }                                                                                                              \
     }
 
+#define spd_timer(func, params...)                                                                                     \
+    {                                                                                                                  \
+        auto start = std::chrono::steady_clock::now();                                                                 \
+        func(params);                                                                                                  \
+        auto end      = std::chrono::steady_clock::now();                                                              \
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();                    \
+        spdlog::info("{}({}) took {} ms", #func, #params, duration);                                                   \
+    }
+
 //^ =========================================================
 //^ Macro Definition Ends
 //^ =========================================================
@@ -80,7 +89,7 @@ struct VisionPLCRecvMsg {
         u8 infantry4 : 1;
         u8 infantry5 : 1;
         u8 sentry : 1;
-        u8 outpost : 1  ;
+        u8 outpost : 1;
         u8 base : 1;
     } shoot_decision;
     u8 end;
@@ -103,7 +112,7 @@ struct SentryVisionRecvMsg {
         u8 infantry4 : 1;
         u8 infantry5 : 1;
         u8 sentry : 1;
-        u8 outpost : 1  ;
+        u8 outpost : 1;
         u8 base : 1;
     } shoot_decision;
     u8 end;
@@ -115,7 +124,7 @@ struct PortConfig {
     int stopbit;
     int databit;
     int parity;
-    
+
     u8 startbyte, endbyte;
 };
 

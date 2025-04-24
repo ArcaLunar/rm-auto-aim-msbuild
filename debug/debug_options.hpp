@@ -7,6 +7,7 @@
 
 struct DebugOptions {
     // *======== Debug Config Area ========* //
+    bool spd_timer = true;
     struct {
         bool initialization = true;
         bool capture        = true;
