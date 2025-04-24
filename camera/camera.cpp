@@ -78,44 +78,18 @@ cv::Mat convert_to_rgb(MV_FRAME_OUT_INFO_EX *info, unsigned char *data) {
 RawImageFrame HikCamera::get_frame() {
     RawImageFrame result;
 
-    // memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
-    spd_timer(
-        spd_wrapper,
-        mvcheck,
-        options.camera.capture,
-        MV_CC_GetOneFrameTimeout,
-        this->handle,
-        this->image_data_buffer.get(),
-        this->payload_size,
-        &this->frame_info,
-        100000
-    );
-
-    result.image = spd_result_timer(convert_to_rgb, &this->frame_info, this->image_data_buffer.get());
-    result.timestamp = std::chrono::steady_clock::now(); // assign current time
-    return result;
+    memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
     // wait for 1 sec, capture image
-    // auto start = std::chrono::steady_clock::now();
-    // spd_wrapper(mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
-    // auto end      = std::chrono::steady_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    // spdlog::warn("getting image buffer requires {} ms", duration);
+    spd_timer(spd_wrapper, mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
 
-    // start        = std::chrono::steady_clock::now();
-    // result.image = convert_to_rgb(&this->frame); // convert to cv::Mat
-    // end          = std::chrono::steady_clock::now();
-    // duration     = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    // spdlog::warn("converting image buffer requires {} ms", duration);
-    // result.timestamp = std::chrono::steady_clock::now(); // assign current time
+    result.image     = spd_result_timer(convert_to_rgb, &this->frame);
+    result.timestamp = std::chrono::steady_clock::now(); // assign current time
+    if (this->frame.pBufAddr != nullptr)
+        spd_timer(
+            spd_wrapper, mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame
+        ); // free
 
-    // if (this->frame.pBufAddr != nullptr) {
-    //     start = std::chrono::steady_clock::now();
-    //     spd_wrapper(mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame); // free
-    //     buffer end   = std::chrono::steady_clock::now(); duration =
-    //     std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); spdlog::warn("freeing image
-    //     buffer requires {} ms", duration);
-    // }
-    // return result;
+    return result;
 }
 
 void HikCamera::list_devices() {
@@ -188,15 +162,6 @@ void HikCamera::set_configs(std::string path) {
     int offset_y = config["offset_y"].value_or(0);
     mvcheck(MV_CC_SetIntValue, this->handle, "OffsetX", offset_x);
     mvcheck(MV_CC_SetIntValue, this->handle, "OffsetY", offset_y);
-
-    //~ 13. get payload size
-    MVCC_INTVALUE param;
-    mvcheck(MV_CC_GetIntValue, this->handle, "PayloadSize", &param);
-    this->payload_size = param.nCurValue;
-
-    //~ 14. init buffer size
-    this->image_data_buffer = std::make_unique<unsigned char[]>(this->payload_size);
-    memset(&this->frame_info, 0, sizeof(MV_FRAME_OUT_INFO_EX));
 }
 
 #undef mvcheck

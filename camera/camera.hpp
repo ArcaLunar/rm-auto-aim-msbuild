@@ -14,14 +14,8 @@ class HikCamera {
   private:
     MV_CC_DEVICE_INFO_LIST devices;
     int camera_id;
-
     void *handle;
-
-    // MV_FRAME_OUT frame;
-
-    MV_FRAME_OUT_INFO_EX frame_info;
-    std::unique_ptr<unsigned char[]> image_data_buffer;
-    size_t payload_size;
+    MV_FRAME_OUT frame;
 
   protected:
     void list_devices();

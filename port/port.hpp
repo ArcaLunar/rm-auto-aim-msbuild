@@ -32,12 +32,13 @@ template <typename Tp = SentryVisionRecvMsg> // sentry uses a different protocol
 class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
     static constexpr size_t kSendMsgSize  = sizeof(VisionPLCSendMsg);
     static constexpr size_t kRecvMsgSize  = sizeof(Tp);
-    static constexpr size_t kRecvMsgCount = 20;   // maximum of 20 cached messages
+    static constexpr size_t kRecvMsgCount = 200;  // maximum of 20 cached messages
     static constexpr long long kTimeout   = 1000; // 1s timeout
     using RawMessage                      = std::array<u8, kRecvMsgSize>;
 
   public:
-    SerialPort(std::string path = "../config/port.toml") : port{ctx}, timer{ctx}, raw_cbuffer{kRecvMsgCount} {
+    SerialPort(std::string path = "../config/port.toml")
+        : port{ctx}, timer{ctx}, raw_cbuffer{kRecvMsgCount}, recv_cbuffer{kRecvMsgCount} {
         spdlog::info("Initializing serial port");
         last_recv = std::chrono::steady_clock::now();
 
@@ -195,37 +196,33 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
     void read_raw() {
         RawMessage raw;
         spdlog::info("(thread) Reading raw data from port...");
+        auto last_log = std::chrono::steady_clock::now();
 
         while (true) {
             raw.fill(0);
             if (!this->port_ok || !this->port.is_open()) {
-
-                spdlog::error("Port is not ready for reading, buffer size {}", this->raw_cbuffer.size());
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                std::this_thread::yield();
+                auto now      = std::chrono::steady_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_log);
+                if (duration.count() >= 1000) {
+                    spdlog::warn("[port read_raw] Port is not ready for reading, buffer size {}", this->raw_cbuffer.size());
+                    last_log = now;
+                }
                 continue;
             }
 
-            try {
-                // Read data from the port
-                size_t bytes_read = boost::asio::read(this->port, boost::asio::buffer(raw.data(), kRecvMsgSize));
+            // Read data from the port
+            size_t bytes_read = boost::asio::read(this->port, boost::asio::buffer(raw.data(), kRecvMsgSize));
 
-                if (bytes_read > 0) {
-                    // Debug output if enabled
-                    if (options.port.inspect_data) {
-                        spdlog::info("Received {} bytes", bytes_read);
-                        spdlog::info("Raw data: {:X:n}", spdlog::to_hex(raw.data(), raw.data() + bytes_read));
-                    }
-
-                    this->raw_cbuffer.push(raw);
-                    this->last_recv = std::chrono::steady_clock::now();
+            if (bytes_read > 0) {
+                // Debug output if enabled
+                if (options.port.inspect_data) {
+                    spdlog::info("Received {} bytes", bytes_read);
+                    spdlog::info("Raw data: {:X:n}", spdlog::to_hex(raw.data(), raw.data() + bytes_read));
                 }
-            } catch (const boost::system::system_error &e) {
-                spdlog::error("Error reading from port: {}", e.what());
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            }
 
-            std::this_thread::yield();
+                this->raw_cbuffer.push(raw);
+                this->last_recv = std::chrono::steady_clock::now();
+            }
         }
     }
 
@@ -236,8 +233,8 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
      */
     void process_raw() {
         Tp payload;
-
         spdlog::info("(thread) Processing raw data...");
+        auto last_log = std::chrono::steady_clock::now();
 
         while (true) {
             // Get the next raw message from the buffer
@@ -245,31 +242,20 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
 
             if (!success) {
                 // No data available yet
-                spdlog::info("No data available yet");
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                std::this_thread::yield();
+                auto now      = std::chrono::steady_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_log);
+                if (duration.count() >= 1000) {
+                    spdlog::warn("[port process] No data available yet");
+                    last_log = now;
+                }
                 continue;
             }
 
-            // Process the raw message
-            for (size_t i = 0; i < raw.size();) {
-                size_t j = i + kRecvMsgSize;
-                if (j >= raw.size()) {
-                    break; // Not enough data
-                }
-
-                // Extract the message if it passes verification
-                if (verify(raw, i, j)) {
-                    std::memcpy(&payload, raw.data() + i, kRecvMsgSize);
-                    this->recv_cbuffer.push(payload);
-                    spdlog::info(
-                        "Processed message: roll={} pitch={} yaw={}", payload.roll, payload.pitch, payload.yaw
-                    );
-                    i = j;
-                } else {
-                    // Move one byte forward and continue scanning
-                    i++;
-                }
+            if (verify(raw, 0, kRecvMsgSize)) {
+                // Process the raw message
+                std::memcpy(&payload, raw.data(), kRecvMsgSize);
+                this->recv_cbuffer.push(payload);
+                spdlog::info("[port process] Processed message: roll={} pitch={} yaw={}", payload.roll, payload.pitch, payload.yaw);
             }
         }
     }
@@ -347,6 +333,15 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
      * @return bool True if port is open and ready
      */
     bool is_port_ok() const { return port_ok; }
+
+    Tp get_imu() {
+        auto [msg, success] = this->recv_cbuffer.pop();
+        if (!success) {
+            spdlog::error("No data available");
+            return Tp{};
+        }
+        return msg;
+    }
 
   private:
     boost::asio::io_context ctx{};

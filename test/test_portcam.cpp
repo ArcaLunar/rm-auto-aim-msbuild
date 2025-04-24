@@ -1,5 +1,6 @@
 #include "camera.hpp"
 #include "circular_buffer.hpp"
+#include "debug_options.hpp"
 #include "port.hpp"
 #include "spdlog/spdlog.h"
 #include "structs.hpp"
@@ -7,13 +8,21 @@
 #include <memory>
 #include <thread>
 
+extern DebugOptions options;
+
 int main() {
-    SerialPort<SentryVisionRecvMsg> port("../config/port.toml");
+    options.camera.initialization = false;
+    options.camera.capture        = false;
+    options.port.initialization   = false;
+    options.port.inspect_data     = false;
+    
+    std::shared_ptr<SerialPort<SentryVisionRecvMsg>> port
+        = std::make_shared<SerialPort<SentryVisionRecvMsg>>("../config/port.toml");
 
     // start port receive
-    std::thread port_reader(&SerialPort<SentryVisionRecvMsg>::read_raw, &port);
-    std::thread port_processor(&SerialPort<SentryVisionRecvMsg>::process_raw, &port);
-    std::thread port_checker(&SerialPort<SentryVisionRecvMsg>::check_reconnect, &port);
+    std::thread port_reader(&SerialPort<SentryVisionRecvMsg>::read_raw, port);
+    std::thread port_processor(&SerialPort<SentryVisionRecvMsg>::process_raw, port);
+    std::thread port_checker(&SerialPort<SentryVisionRecvMsg>::check_reconnect, port);
 
     // image producer
     std::shared_ptr<CircularBuffer<RawImageFrame>> img_buffer = std::make_shared<CircularBuffer<RawImageFrame>>(100);
@@ -24,7 +33,6 @@ int main() {
                 RawImageFrame frame = cam.get_frame();
                 if (frame.image.empty()) {
                     spdlog::error("Failed to get frame");
-                    std::this_thread::yield();
                     continue;
                 }
 
@@ -41,7 +49,6 @@ int main() {
             auto [frame, verdict] = img_buffer->pop();
             if (!verdict) {
                 spdlog::warn("No image available");
-                std::this_thread::yield();
                 continue;
             }
 
@@ -49,6 +56,9 @@ int main() {
             spdlog::info("Image size: {}x{}", frame.image.cols, frame.image.rows);
             spdlog::info("Image size: {} bytes", frame.image.total() * frame.image.elemSize());
             spdlog::info("Image timestamp: {}", frame.timestamp.time_since_epoch().count());
+
+            auto imu = port->get_imu();
+            spdlog::info("IMU data: roll={} pitch={} yaw={}", imu.roll, imu.pitch, imu.yaw);
         }
     });
 
@@ -58,6 +68,6 @@ int main() {
     port_checker.join();
     img_producer.join();
     img_consumer.join();
-    
+
     return 0;
 }
