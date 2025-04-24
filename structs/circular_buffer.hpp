@@ -27,7 +27,7 @@ class CircularBuffer {
         if (this->is_empty())
             return {T{}, false};
 
-        auto item  = std::move(this->data[this->tail]);
+        auto item  = this->data[this->tail];
         this->full = false;
         this->tail = (this->tail + 1) % this->max_size;
         return {item, true};
@@ -46,7 +46,6 @@ class CircularBuffer {
     bool is_full() const { return this->full; }
 
     size_t size() const {
-        std::lock_guard<std::mutex> lock(this->mtx);
         if (this->full)
             return this->max_size;
         if (this->head >= this->tail)

@@ -1,6 +1,5 @@
 #include "camera.hpp"
 #include <atomic>
-#include <chrono>
 #include <opencv2/highgui.hpp>
 #include <spdlog/spdlog.h>
 

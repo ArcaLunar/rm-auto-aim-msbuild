@@ -8,15 +8,15 @@
 #include <thread>
 
 int main() {
-    SerialPort port;
+    SerialPort<SentryVisionRecvMsg> port("../config/port.toml");
 
     // start port receive
-    std::thread port_reader(&SerialPort::read_raw, &port);
-    std::thread port_processor(&SerialPort::process_raw, &port);
-    std::thread port_checker(&SerialPort::check_reconnect, &port);
+    std::thread port_reader(&SerialPort<SentryVisionRecvMsg>::read_raw, &port);
+    std::thread port_processor(&SerialPort<SentryVisionRecvMsg>::process_raw, &port);
+    std::thread port_checker(&SerialPort<SentryVisionRecvMsg>::check_reconnect, &port);
 
     // image producer
-    std::shared_ptr<CircularBuffer<RawImageFrame>> img_buffer = std::make_shared<CircularBuffer<RawImageFrame>>(1000);
+    std::shared_ptr<CircularBuffer<RawImageFrame>> img_buffer = std::make_shared<CircularBuffer<RawImageFrame>>(100);
     std::thread img_producer([&] {
         try {
             HikCamera cam;

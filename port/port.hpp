@@ -199,8 +199,10 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
         while (true) {
             raw.fill(0);
             if (!this->port_ok || !this->port.is_open()) {
-                spdlog::error("Port is not ready for reading");
+
+                spdlog::error("Port is not ready for reading, buffer size {}", this->raw_cbuffer.size());
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::yield();
                 continue;
             }
 
@@ -222,6 +224,8 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
                 spdlog::error("Error reading from port: {}", e.what());
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
+
+            std::this_thread::yield();
         }
     }
 
@@ -241,15 +245,16 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
 
             if (!success) {
                 // No data available yet
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 spdlog::info("No data available yet");
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::yield();
                 continue;
             }
 
             // Process the raw message
             for (size_t i = 0; i < raw.size();) {
                 size_t j = i + kRecvMsgSize;
-                if (j > raw.size()) {
+                if (j >= raw.size()) {
                     break; // Not enough data
                 }
 

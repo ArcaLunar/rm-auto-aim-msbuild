@@ -108,6 +108,7 @@ struct SentryVisionRecvMsg {
     } shoot_decision;
     u8 end;
 };
+#pragma pack(pop)
 
 struct PortConfig {
     int baudrate;

@@ -15,10 +15,10 @@ int main() {
     std::thread port_checker(&SerialPort<SentryVisionRecvMsg>::check_reconnect, &port);
 
     // image producer
-    std::thread img_producer([&] {
-        HikCamera cam;
-        while (true) {
-            auto frame = cam.get_frame();
-        }
-    });
+    // std::thread img_producer([&] {
+    //     HikCamera cam;
+    //     while (true) {
+    //         auto frame = cam.get_frame();
+    //     }
+    // });
 }
