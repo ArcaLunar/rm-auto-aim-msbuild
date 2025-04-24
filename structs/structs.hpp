@@ -16,7 +16,7 @@
         }                                                                                                              \
     }
 
-#define conditioned_log(func, waiter, params...)                                                                           \
+#define conditioned_log(func, waiter, params...)                                                                       \
     [&] {                                                                                                              \
         if (waiter) {                                                                                                  \
             spdlog::info("calling {}({})", #func, #params);                                                            \
@@ -113,7 +113,6 @@ struct SentryVisionRecvMsg {
     float pitch;
     float yaw;
     u8 ally_color;
-    u8 unknown_byte_wtf;
     u8 vision_mode;
     struct armor_select_t {
         u8 hero : 1;
@@ -125,6 +124,13 @@ struct SentryVisionRecvMsg {
         u8 outpost : 1;
         u8 base : 1;
     } shoot_decision;
+    struct robot_remain_hp_t {
+        uint8_t m_Hero : 1;
+        uint8_t m_Engineer : 1;
+        uint8_t m_Infantry3 : 1;
+        uint8_t m_Infantry4 : 1;
+        uint8_t m_Sentry : 1;
+    } remaining_hp;
     u8 end;
 };
 #pragma pack(pop)

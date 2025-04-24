@@ -34,6 +34,7 @@ subdir('structs')
 
 subdir('camera')
 subdir('port')
+subdir('detector')
 
 subdir('app')
 subdir('test')
