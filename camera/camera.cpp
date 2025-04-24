@@ -17,22 +17,22 @@ HikCamera::HikCamera() {
     spdlog::info("HikCamera initializing");
 
     //~ 1. initialize SDK
-    spd_wrapper(mvcheck, options.camera.initialization, MV_CC_Initialize);
+    conditioned_log(mvcheck, options.camera.initialization, MV_CC_Initialize);
 
     //~ 2. enum devices. But no need to do this, there's only one camera.
-    spd_wrapper(this->list_devices, options.camera.initialization);
+    conditioned_log(this->list_devices, options.camera.initialization);
 
     //~ 3. create handle
-    spd_wrapper(this->create_handle, options.camera.initialization);
+    conditioned_log(this->create_handle, options.camera.initialization);
 
     //~ 4. open device
-    spd_wrapper(this->open_device, options.camera.initialization);
+    conditioned_log(this->open_device, options.camera.initialization);
 
     //~ 5. set configs
-    spd_wrapper(this->set_configs, options.camera.initialization, "../config/camera.toml");
+    conditioned_log(this->set_configs, options.camera.initialization, "../config/camera.toml");
 
     //~ 6. start grab
-    spd_wrapper(mvcheck, options.camera.initialization, MV_CC_StartGrabbing, this->handle);
+    conditioned_log(mvcheck, options.camera.initialization, MV_CC_StartGrabbing, this->handle);
 
     spdlog::info("HikCamera has initialized successfully");
 }
@@ -80,13 +80,13 @@ RawImageFrame HikCamera::get_frame() {
 
     memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
     // wait for 1 sec, capture image
-    spd_timer(spd_wrapper, mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
+    spd_timer(conditioned_log, mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
 
     result.image     = spd_result_timer(convert_to_rgb, &this->frame);
     result.timestamp = std::chrono::steady_clock::now(); // assign current time
     if (this->frame.pBufAddr != nullptr)
         spd_timer(
-            spd_wrapper, mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame
+            conditioned_log, mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame
         ); // free
 
     return result;

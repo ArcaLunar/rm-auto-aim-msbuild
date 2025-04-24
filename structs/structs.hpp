@@ -16,7 +16,7 @@
         }                                                                                                              \
     }
 
-#define spd_wrapper(func, waiter, params...)                                                                           \
+#define conditioned_log(func, waiter, params...)                                                                           \
     [&] {                                                                                                              \
         if (waiter) {                                                                                                  \
             spdlog::info("calling {}({})", #func, #params);                                                            \

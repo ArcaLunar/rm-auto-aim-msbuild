@@ -4,17 +4,18 @@
 #include "spdlog/spdlog.h"
 #include "toml++/toml.h"
 #include <stdexcept>
+#include <atomic>
 
 struct DebugOptions {
     // *======== Debug Config Area ========* //
-    bool spd_timer = true;
+    std::atomic_bool spd_timer = true;
     struct {
-        bool initialization = true;
-        bool capture        = true;
+        std::atomic_bool initialization = true;
+        std::atomic_bool capture        = true;
     } camera;
     struct {
-        bool initialization = true;
-        bool inspect_data   = true;
+        std::atomic_bool initialization = true;
+        std::atomic_bool inspect_data   = true;
     } port;
 
     DebugOptions() {

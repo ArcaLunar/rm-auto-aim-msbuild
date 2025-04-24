@@ -204,7 +204,9 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
                 auto now      = std::chrono::steady_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_log);
                 if (duration.count() >= 1000) {
-                    spdlog::warn("[port read_raw] Port is not ready for reading, buffer size {}", this->raw_cbuffer.size());
+                    spdlog::warn(
+                        "[port read_raw] Port is not ready for reading, buffer size {}", this->raw_cbuffer.size()
+                    );
                     last_log = now;
                 }
                 continue;
@@ -245,7 +247,7 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
                 auto now      = std::chrono::steady_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_log);
                 if (duration.count() >= 1000) {
-                    spdlog::warn("[port process] No data available yet");
+                    conditioned_log(spdlog::warn, options.port.inspect_data, "[port process] No data available yet");
                     last_log = now;
                 }
                 continue;
@@ -255,7 +257,14 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
                 // Process the raw message
                 std::memcpy(&payload, raw.data(), kRecvMsgSize);
                 this->recv_cbuffer.push(payload);
-                spdlog::info("[port process] Processed message: roll={} pitch={} yaw={}", payload.roll, payload.pitch, payload.yaw);
+                conditioned_log(
+                    spdlog::info,
+                    options.port.inspect_data,
+                    "[port process] Processed message: roll={} pitch={} yaw={}",
+                    payload.roll,
+                    payload.pitch,
+                    payload.yaw
+                );
             }
         }
     }
