@@ -56,33 +56,66 @@ cv::Mat convert_to_rgb(MV_FRAME_OUT *frame) {
     }
     return result;
 }
+cv::Mat convert_to_rgb(MV_FRAME_OUT_INFO_EX *info, unsigned char *data) {
+    cv::Mat result;
+
+    if (info->enPixelType == PixelType_Gvsp_BayerRG8) {
+        cv::Mat src(info->nExtendHeight, info->nWidth, CV_8UC1, data);
+        cv::cvtColor(src, result, cv::COLOR_BayerBG2RGB);
+    } else if (info->enPixelType == PixelType_Gvsp_BayerBG8) {
+        cv::Mat src(info->nExtendHeight, info->nWidth, CV_8UC1, data);
+        cv::cvtColor(src, result, cv::COLOR_BayerRG2RGB);
+    } else if (info->enPixelType == PixelType_Gvsp_RGB8_Packed) {
+        cv::Mat src(info->nExtendHeight, info->nWidth, CV_8UC3, data);
+        result = src;
+    } else {
+        spdlog::error("Unsupported pixel format");
+        return cv::Mat();
+    }
+    return result;
+}
 
 RawImageFrame HikCamera::get_frame() {
     RawImageFrame result;
 
-    memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
-    // wait for 1 sec, capture image
-    auto start = std::chrono::steady_clock::now();
-    spd_wrapper(mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
-    auto end      = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    spdlog::warn("getting image buffer requires {} ms", duration);
+    // memset(&this->frame, 0, sizeof(MV_FRAME_OUT));
+    spd_timer(
+        spd_wrapper,
+        mvcheck,
+        options.camera.capture,
+        MV_CC_GetOneFrameTimeout,
+        this->handle,
+        this->image_data_buffer.get(),
+        this->payload_size,
+        &this->frame_info,
+        100000
+    );
 
-    start        = std::chrono::steady_clock::now();
-    result.image = convert_to_rgb(&this->frame); // convert to cv::Mat
-    end          = std::chrono::steady_clock::now();
-    duration     = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    spdlog::warn("converting image buffer requires {} ms", duration);
-    result.timestamp = std::chrono::system_clock::now(); // assign current time
-
-    if (this->frame.pBufAddr != nullptr) {
-        start = std::chrono::steady_clock::now();
-        spd_wrapper(mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame); // free buffer
-        end   = std::chrono::steady_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        spdlog::warn("freeing image buffer requires {} ms", duration);
-    }
+    result.image = spd_result_timer(convert_to_rgb, &this->frame_info, this->image_data_buffer.get());
+    result.timestamp = std::chrono::steady_clock::now(); // assign current time
     return result;
+    // wait for 1 sec, capture image
+    // auto start = std::chrono::steady_clock::now();
+    // spd_wrapper(mvcheck, options.camera.capture, MV_CC_GetImageBuffer, this->handle, &this->frame, 1000);
+    // auto end      = std::chrono::steady_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    // spdlog::warn("getting image buffer requires {} ms", duration);
+
+    // start        = std::chrono::steady_clock::now();
+    // result.image = convert_to_rgb(&this->frame); // convert to cv::Mat
+    // end          = std::chrono::steady_clock::now();
+    // duration     = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    // spdlog::warn("converting image buffer requires {} ms", duration);
+    // result.timestamp = std::chrono::steady_clock::now(); // assign current time
+
+    // if (this->frame.pBufAddr != nullptr) {
+    //     start = std::chrono::steady_clock::now();
+    //     spd_wrapper(mvcheck, options.camera.capture, MV_CC_FreeImageBuffer, this->handle, &this->frame); // free
+    //     buffer end   = std::chrono::steady_clock::now(); duration =
+    //     std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); spdlog::warn("freeing image
+    //     buffer requires {} ms", duration);
+    // }
+    // return result;
 }
 
 void HikCamera::list_devices() {
@@ -103,8 +136,8 @@ void HikCamera::set_configs(std::string path) {
     mvcheck(MV_CC_SetEnumValue, this->handle, "TriggerMode", trigger_mode);
 
     //~ 2. disable Acquisition frame rate
-    bool acquisition_frame_rate = config["acquisition_frame_rate"].value_or(false);
-    mvcheck(MV_CC_SetBoolValue, this->handle, "AcquisitionFrameRateEnable", acquisition_frame_rate);
+    // bool acquisition_frame_rate = config["acquisition_frame_rate"].value_or(false);
+    // mvcheck(MV_CC_SetBoolValue, this->handle, "AcquisitionFrameRateEnable", acquisition_frame_rate);
 
     //~ 3. Pixel format
     std::string pixel_format = config["pixel_format"].value_or("BayerRG8");
@@ -112,8 +145,8 @@ void HikCamera::set_configs(std::string path) {
     mvcheck(MV_CC_SetEnumValue, this->handle, "PixelFormat", format);
 
     //~ 4. ADC bit depth
-    int adc_bit_depth = config["adc_bit_depth"].value_or(2);
-    mvcheck(MV_CC_SetEnumValue, this->handle, "ADCBitDepth", adc_bit_depth);
+    // int adc_bit_depth = config["adc_bit_depth"].value_or(2);
+    // mvcheck(MV_CC_SetEnumValue, this->handle, "ADCBitDepth", adc_bit_depth);
 
     //~ 5. exposure auto
     // int exposure_auto = config["exposure_auto"].value_or(0);
@@ -124,25 +157,25 @@ void HikCamera::set_configs(std::string path) {
     // mvcheck(MV_CC_SetFloatValue, this->handle, "ExposureTime", exposure_time);
 
     //~ 7. gain auto
-    int gain_auto = config["gain_auto"].value_or(0);
-    mvcheck(MV_CC_SetEnumValue, this->handle, "GainAuto", gain_auto);
+    // int gain_auto = config["gain_auto"].value_or(0);
+    // mvcheck(MV_CC_SetEnumValue, this->handle, "GainAuto", gain_auto);
 
     //~ 8. gain
-    int gain = config["gain"].value_or(0);
-    mvcheck(MV_CC_SetFloatValue, this->handle, "Gain", gain);
+    // int gain = config["gain"].value_or(0);
+    // mvcheck(MV_CC_SetFloatValue, this->handle, "Gain", gain);
 
     //~ 9. gamma enable
-    bool gamma_enable = config["gamma_enable"].value_or(false);
-    mvcheck(MV_CC_SetBoolValue, this->handle, "GammaEnable", gamma_enable);
+    // bool gamma_enable = config["gamma_enable"].value_or(false);
+    // mvcheck(MV_CC_SetBoolValue, this->handle, "GammaEnable", gamma_enable);
 
     //~ 10. gamma
-    if (gamma_enable) {
-        int gamma_select = config["gamma_select"].value_or(1);
-        mvcheck(MV_CC_SetEnumValue, this->handle, "GammaSelector", gamma_select);
+    // if (gamma_enable) {
+    //     int gamma_select = config["gamma_select"].value_or(1);
+    //     mvcheck(MV_CC_SetEnumValue, this->handle, "GammaSelector", gamma_select);
 
-        int gamma = config["gamma"].value_or(0.5);
-        mvcheck(MV_CC_SetFloatValue, this->handle, "Gamma", gamma);
-    }
+    //     int gamma = config["gamma"].value_or(0.5);
+    //     mvcheck(MV_CC_SetFloatValue, this->handle, "Gamma", gamma);
+    // }
 
     //~ 11. width, height
     int width  = config["width"].value_or(1440);
@@ -155,6 +188,15 @@ void HikCamera::set_configs(std::string path) {
     int offset_y = config["offset_y"].value_or(0);
     mvcheck(MV_CC_SetIntValue, this->handle, "OffsetX", offset_x);
     mvcheck(MV_CC_SetIntValue, this->handle, "OffsetY", offset_y);
+
+    //~ 13. get payload size
+    MVCC_INTVALUE param;
+    mvcheck(MV_CC_GetIntValue, this->handle, "PayloadSize", &param);
+    this->payload_size = param.nCurValue;
+
+    //~ 14. init buffer size
+    this->image_data_buffer = std::make_unique<unsigned char[]>(this->payload_size);
+    memset(&this->frame_info, 0, sizeof(MV_FRAME_OUT_INFO_EX));
 }
 
 #undef mvcheck

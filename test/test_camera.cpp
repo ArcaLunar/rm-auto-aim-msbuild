@@ -23,7 +23,7 @@ int main() {
 
     std::thread run([&] {
         while (true) {
-            auto start_time     = std::chrono::system_clock::now();
+            auto start_time     = std::chrono::steady_clock::now();
             RawImageFrame frame = camera.get_frame();
 
             if (frame.image.empty()) {
@@ -33,7 +33,7 @@ int main() {
 
             // display image
             // cv::imshow("Camera", frame.image);
-            auto end_time = std::chrono::system_clock::now();
+            auto end_time = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
             // print some stats

@@ -17,7 +17,7 @@
     }
 
 #define spd_wrapper(func, waiter, params...)                                                                           \
-    {                                                                                                                  \
+    [&] {                                                                                                              \
         if (waiter) {                                                                                                  \
             spdlog::info("calling {}({})", #func, #params);                                                            \
         }                                                                                                              \
@@ -25,7 +25,7 @@
         if (waiter) {                                                                                                  \
             spdlog::info("{}({}) done", #func, #params);                                                               \
         }                                                                                                              \
-    }
+    }();
 
 #define spd_timer(func, params...)                                                                                     \
     {                                                                                                                  \
@@ -35,6 +35,16 @@
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();                    \
         spdlog::info("{}({}) took {} ms", #func, #params, duration);                                                   \
     }
+
+#define spd_result_timer(func, params...)                                                                              \
+    [&] {                                                                                                              \
+        auto start    = std::chrono::steady_clock::now();                                                              \
+        auto result   = func(params);                                                                                  \
+        auto end      = std::chrono::steady_clock::now();                                                              \
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();                    \
+        spdlog::info("{}({}) took {} ms", #func, #params, duration);                                                   \
+        return result;                                                                                                 \
+    }();
 
 //^ =========================================================
 //^ Macro Definition Ends
@@ -49,7 +59,7 @@
 
 struct RawImageFrame {
     cv::Mat image;
-    std::chrono::system_clock::time_point timestamp;
+    std::chrono::steady_clock::time_point timestamp;
 };
 
 //^ ========================================================
