@@ -22,6 +22,7 @@ struct DebugOptions {
     } lightbar;
     struct {
         std::atomic_bool show_detail = true;
+        std::atomic_bool procedure_detail = true;
     } armor;
 
     DebugOptions() {
@@ -40,6 +41,7 @@ struct DebugOptions {
             lightbar.show_detail = config["detector"]["lightbar"]["show_detail"].value_or(false);
             // * init for armor debugging
             armor.show_detail = config["detector"]["armor"]["show_detail"].value_or(false);
+            armor.procedure_detail = config["detector"]["armor"]["procedure_detail"].value_or(false);
         } catch (const toml::parse_error &err) {
             spdlog::info("Error parsing debug.toml: {}", err.description());
             throw std::runtime_error("Failed to parse debug.toml. Please check the path or the file.");

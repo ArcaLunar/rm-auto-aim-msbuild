@@ -1,8 +1,8 @@
 sources = files(
+    'src/armor_config.cpp',
+    'src/lightbar_config.cpp',
     'src/armor.cpp',
-)
-headers = files(
-    'include/armor.hpp'
+    'src/lightbar.cpp',
 )
 
 include_headers = include_directories('./include')

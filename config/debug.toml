@@ -11,3 +11,4 @@ show_detail = true
 
 [detector.armor]
 show_detail = true
+procedure_detail = true
