@@ -5,3 +5,9 @@ capture = true
 [port]
 initialization = true
 inspect_data = true
+
+[detector.lightbar]
+show_detail = true
+
+[detector.armor]
+show_detail = true

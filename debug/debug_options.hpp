@@ -3,8 +3,8 @@
 
 #include "spdlog/spdlog.h"
 #include "toml++/toml.h"
-#include <stdexcept>
 #include <atomic>
+#include <stdexcept>
 
 struct DebugOptions {
     // *======== Debug Config Area ========* //
@@ -17,6 +17,12 @@ struct DebugOptions {
         std::atomic_bool initialization = true;
         std::atomic_bool inspect_data   = true;
     } port;
+    struct {
+        std::atomic_bool show_detail = true;
+    } lightbar;
+    struct {
+        std::atomic_bool show_detail = true;
+    } armor;
 
     DebugOptions() {
         try {
@@ -29,6 +35,11 @@ struct DebugOptions {
             // * init for port debugging
             port.initialization = config["port"]["initialization"].value_or(false);
             port.inspect_data   = config["port"]["inspect_data"].value_or(false);
+
+            // * init for light bar debugging
+            lightbar.show_detail = config["detector"]["lightbar"]["show_detail"].value_or(false);
+            // * init for armor debugging
+            armor.show_detail = config["detector"]["armor"]["show_detail"].value_or(false);
         } catch (const toml::parse_error &err) {
             spdlog::info("Error parsing debug.toml: {}", err.description());
             throw std::runtime_error("Failed to parse debug.toml. Please check the path or the file.");

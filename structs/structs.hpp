@@ -5,6 +5,10 @@
 //! Useful Macro Definitions
 //! ========================================================
 
+#include <chrono>
+#include <cstdint>
+#include <opencv2/core.hpp>
+
 #define mvcheck(func, params...)                                                                                       \
     {                                                                                                                  \
         int nret_##func = func(params);                                                                                \
@@ -46,24 +50,8 @@
         return result;                                                                                                 \
     }();
 
-//^ =========================================================
-//^ Macro Definition Ends
-//^ =========================================================
-
-//! ========================================================
-//! Camera Data Classes
-//! ========================================================
-
-#include <chrono>
-#include <opencv2/core.hpp>
-
-struct RawImageFrame {
-    cv::Mat image;
-    std::chrono::steady_clock::time_point timestamp;
-};
-
 //^ ========================================================
-//^ Camera Data Classes Ends
+//^ Macro Definition Ends
 //^ ========================================================
 
 //! ========================================================
@@ -82,9 +70,6 @@ struct VisionPLCSendMsg {
     u8 flag_updated;
     u8 end;
 };
-#pragma pack(pop)
-
-#pragma pack(push, 1)
 struct VisionPLCRecvMsg {
     u8 start;
     float roll;
@@ -104,9 +89,6 @@ struct VisionPLCRecvMsg {
     } shoot_decision;
     u8 end;
 };
-#pragma pack(pop)
-
-#pragma pack(push, 1)
 struct SentryVisionRecvMsg {
     u8 start;
     float roll;
@@ -142,6 +124,156 @@ struct PortConfig {
     int parity;
 
     u8 startbyte, endbyte;
+};
+
+//! ========================================================
+//!!!!! IMPORTANT !!!!!
+//! ========================================================
+using RecvMsgType = SentryVisionRecvMsg;
+
+struct StampedRecvMsg {
+    std::chrono::steady_clock::time_point timestamp;
+    RecvMsgType msg;
+};
+
+//! ========================================================
+//! Camera Data Classes
+//! ========================================================
+
+struct RawImageFrame {
+    cv::Mat image;
+    std::chrono::steady_clock::time_point timestamp;
+};
+
+//^ ========================================================
+//^ Camera Data Classes Ends
+//^ ========================================================
+
+//! ========================================================
+//! IMU Data Classes
+//! ========================================================
+
+struct IMUInfo {
+    double roll{}, pitch{}, yaw{};
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
+
+    void load_from_recvmsg(const StampedRecvMsg &msg);
+    cv::Mat rotation() const;
+};
+
+//! ========================================================
+//! Detector Data Classes
+//! ========================================================
+
+enum class ArmorType {
+    None,
+    Small,
+    Large,
+};
+
+struct LightBarConfig {
+    double min_area, max_area;
+    double min_solidity;
+    double min_aspect_ratio, max_aspect_ratio;
+    double max_angle;
+    int brightness_threshold;
+    int color_threshold;
+
+    explicit LightBarConfig(std::string path);
+};
+
+struct ArmorConfig {
+    double max_angle_diff;
+    double max_height_diff_ratio;
+    double max_Y_diff_ratio;
+    double min_X_diff_ratio;
+    double big_armor_ratio, small_armor_ratio;
+    double min_aspect_ratio, max_aspect_ratio;
+    double min_area;
+    double max_roll_angle;
+    double max_light_bar_armor_area_ratio;
+    double area_normalized_base;
+    double sight_offset_normalized_base;
+    double lightbar_area_ratio;
+
+    explicit ArmorConfig(std::string path);
+};
+
+struct LightBar {
+    std::vector<cv::Point> contour; // 灯条轮廓
+    cv::RotatedRect ellipse;
+    std::vector<cv::Point2f> vertices;
+    double long_axis, short_axis;      // 长短轴
+    double angle;                      // 倾斜角度, [-90, 90), deg
+    double ellipse_area, contour_area; // 椭圆面积、轮廓面积
+    double solidity;                   // 轮廓面积/椭圆面积
+
+    LightBar();
+    LightBar(const std::vector<cv::Point> &contour);
+    ~LightBar();
+
+    cv::Point2f center() const;
+    /// 判断灯条是否合法
+    bool is_valid(const LightBarConfig &config) const;
+};
+
+struct RawArmor {
+    //* 灯条
+    LightBar left, right;              // 左右灯条
+    std::vector<cv::Point2f> vertices; // 装甲板四个顶点
+    cv::Point2f center;                // 装甲板中心
+    ArmorType type;                    // 装甲板类型
+    cv::RotatedRect min_rect;          // 装甲板最小外接矩形
+    double angle;                      // 装甲板倾斜角度, [-90, 90), deg
+
+    RawArmor() = default;
+    explicit RawArmor(const LightBar &l1, const LightBar &l2);
+
+    // 判断装甲板是否合法
+    bool is_valid(const ArmorConfig &config);
+};
+
+
+struct AnnotatedArmorInfo {
+    RawArmor armor;
+    int result; // id 代表兵种
+    IMUInfo imu_info;
+    std::chrono::time_point<std::chrono::system_clock> timestamp;
+};
+
+//! ========================================================
+//! Coordinate Transform Related Data Structures
+//! ========================================================
+
+//! 单位均为 meter
+struct pose_under_camera_coord {
+    double roll{}, pitch{}, yaw{};
+    cv::Mat rvec, tvec;
+    double direction;  // 装甲板朝向
+    double distance;   // 装甲板中心到相机的距离
+    cv::Mat center_3d; // 装甲板中心在相机坐标系下的坐标
+
+    void load_from_imu(const IMUInfo &imu, const cv::Mat &T_camera_to_barrel);
+};
+//! 单位均为 meter
+//! Absolute: relative to barrel
+struct poes_under_barrel_coord {
+    double roll{}, pitch{}, yaw{};
+    double direction; // 装甲板朝向
+    double distance;
+    cv::Mat center_3d;
+};
+//! 单位均为 meter
+struct Armor3d : AnnotatedArmorInfo {
+    double bullet_flying_time;
+    double pitch_relative_to_barrel, yaw_relative_to_barrel;
+
+    cv::Mat T_armor_to_barrel; // meters
+    cv::Mat R_armor_to_barrel; // radians
+
+    //* transform information
+    pose_under_camera_coord p_a2c;
+    poes_under_barrel_coord p_barrel;
 };
 
 #endif
