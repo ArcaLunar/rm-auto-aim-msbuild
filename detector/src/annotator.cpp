@@ -15,17 +15,19 @@ std::vector<AnnotatedArmorInfo> Annotator::annotate(const RawImageFrame &frame, 
     if (armors.empty()) {
         spdlog::warn("No armor detected");
         return result;
+    } else {
+        spdlog::info("Detected {} armors", armors.size());
     }
 
     // 识别数字
-    auto rois = this->classifier->extract_region_of_interest(frame.image, armors);
+    auto rois   = this->classifier->extract_region_of_interest(frame.image, armors);
     IMUInfo imu = {msg.roll, msg.pitch, msg.yaw, frame.timestamp};
     for (size_t i = 0; i < armors.size(); ++i) {
         AnnotatedArmorInfo info;
 
-        info.armor  = armors[i];
-        info.result = this->classifier->classify(rois[i]);
-        info.imu_info = imu;
+        info.armor     = armors[i];
+        info.result    = this->classifier->classify(rois[i]);
+        info.imu_info  = imu;
         info.timestamp = frame.timestamp;
 
         // level 1 过滤
@@ -33,7 +35,7 @@ std::vector<AnnotatedArmorInfo> Annotator::annotate(const RawImageFrame &frame, 
             spdlog::warn("Armor {} not in labels, needs to be ignored", info.result);
             continue;
         }
-        
+
         result.push_back(info);
     }
 

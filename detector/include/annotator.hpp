@@ -9,10 +9,9 @@
 
 class Annotator {
   public:
-    Annotator() {
-        this->detector   = std::make_shared<OpenCVDetector>("../config/detector.toml");
-        this->classifier = std::make_shared<Classifier>("../config/classifier.toml");
-    }
+    Annotator()
+        : detector(std::make_shared<OpenCVDetector>("../config/detector.toml")),
+          classifier(std::make_shared<Classifier>("../config/classifier.toml")) {}
 
     /**
      * @brief 根据摄像机拍到的图像和接受到的电控消息，进行标定、识别

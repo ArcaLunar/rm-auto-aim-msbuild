@@ -1,6 +1,7 @@
 #include "classifier.hpp"
+#include "annotator.hpp"
 
 int main() {
     // Create a Classifier object with the path to the model configuration
-    Classifier classifier("../config/classifier.toml");
+    Annotator annotator;
 }

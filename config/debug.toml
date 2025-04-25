@@ -1,10 +1,10 @@
 [camera]
-initialization = true
-capture = true
+initialization = false
+capture = false
 
 [port]
-initialization = true
-inspect_data = true
+initialization = false
+inspect_data = false
 
 [detector.lightbar]
 show_detail = true

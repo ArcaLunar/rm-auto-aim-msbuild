@@ -113,3 +113,5 @@ int Classifier::inference(cv::Mat &src) {
 }
 
 void Classifier::preprocess(cv::Mat &src) { cv::cvtColor(src, src, cv::COLOR_BGR2GRAY); }
+
+int Classifier::classify(cv::Mat &roi) { return this->inference(roi); }

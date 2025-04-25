@@ -257,14 +257,15 @@ class SerialPort : public std::enable_shared_from_this<SerialPort<Tp>> {
                 // Process the raw message
                 std::memcpy(&payload, raw.data(), kRecvMsgSize);
                 this->recv_cbuffer.push(payload);
-                conditioned_log(
-                    spdlog::info,
-                    options.port.inspect_data,
-                    "[port process] Processed message: roll={} pitch={} yaw={}",
-                    payload.roll,
-                    payload.pitch,
-                    payload.yaw
-                );
+                if (options.port.inspect_data)
+                    conditioned_log(
+                        spdlog::info,
+                        options.port.inspect_data,
+                        "[port process] Processed message: roll={} pitch={} yaw={}",
+                        payload.roll,
+                        payload.pitch,
+                        payload.yaw
+                    );
             }
         }
     }
