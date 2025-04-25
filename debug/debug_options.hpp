@@ -48,6 +48,11 @@ struct DebugOptions {
         std::atomic_bool annotate = true;
     } annotator;
 
+    struct {
+        std::atomic_bool init = true;
+        std::atomic_bool debug_cvt = true;
+    } tf;
+
     DebugOptions() {
         try {
             toml::table config = toml::parse_file("../config/debug.toml");

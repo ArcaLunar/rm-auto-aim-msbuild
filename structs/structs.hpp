@@ -51,6 +51,16 @@
         return result;                                                                                                 \
     }();
 
+//! 赛场参数
+constexpr int ModelInputWidth     = 64;  // 摄像头输入图像宽度
+constexpr int ModelInputHeight    = 64;  // 摄像头输入图像高度
+constexpr double SmallArmorWidth  = 135; // 单位 mm
+constexpr double SmallArmorHeight = 56;  // 单位 mm
+constexpr double LargeArmorWidth  = 230; // 单位 mm
+constexpr double LargeArmorHeight = 56;  // 单位 mm
+constexpr double kDegreeToRadian = 0.017453292519943295769236907684886;
+constexpr double kRadianToDegree = 57.295779513082320876798154814105;
+
 //^ ========================================================
 //^ Macro Definition Ends
 //^ ========================================================
