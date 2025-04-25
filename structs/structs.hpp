@@ -142,11 +142,6 @@ struct PortConfig {
 //! ========================================================
 using RecvMsgType = SentryVisionRecvMsg;
 
-struct StampedRecvMsg {
-    std::chrono::steady_clock::time_point timestamp;
-    RecvMsgType msg;
-};
-
 struct RMColor {
     static constexpr int Blue    = 0;
     static constexpr int Unknown = 1;
@@ -187,7 +182,7 @@ struct IMUInfo {
     double roll{}, pitch{}, yaw{};
     std::chrono::steady_clock::time_point timestamp;
 
-    void load_from_recvmsg(const StampedRecvMsg &msg);
+    void load_from_recvmsg(const RecvMsgType &msg);
     cv::Mat rotation() const;
 };
 

@@ -1,5 +1,22 @@
 #include "transform.hpp"
 #include "structs.hpp"
+
+// ========================================================
+// Implement for IMU pose
+// ========================================================
+void IMUInfo::load_from_recvmsg(const RecvMsgType &msg) {
+    roll  = msg.roll;
+    pitch = msg.pitch;
+    yaw   = msg.yaw;
+}
+cv::Mat IMUInfo::rotation() const {
+    return Transform::Functions::get_rotation_matrix(
+        Transform::Functions::deg_to_rad(roll),
+        Transform::Functions::deg_to_rad(pitch),
+        Transform::Functions::deg_to_rad(yaw)
+    );
+}
+
 // ========================================================
 // Implement for Coordinate Transform
 // ========================================================

@@ -1,8 +1,11 @@
 #include "annotator.hpp"
 #include "camera.hpp"
+#include "circular_buffer.hpp"
 #include "debug_options.hpp"
 #include "port.hpp"
+#include "pose_convert.hpp"
 #include "structs.hpp"
+#include <memory>
 #include <sstream>
 
 extern DebugOptions options;
@@ -40,6 +43,8 @@ int main() {
         }
     });
 
+    auto armor_buffer = std::make_shared<CircularBuffer<std::vector<AnnotatedArmorInfo>>>(100);
+    auto to_filter    = std::make_shared<CircularBuffer<std::vector<Armor3d>>>(100);
     std::thread img_consumer([&] {
         Annotator annotator;
         while (true) {
@@ -63,6 +68,40 @@ int main() {
             }
             spdlog::info("detected: {}", ss.str());
             spdlog::info("IMU data: roll={} pitch={} yaw={}", msg.roll, msg.pitch, msg.yaw);
+
+            armor_buffer->push(armors);
+            spdlog::info("Pushed {} armors to buffer", armors.size());
+        }
+    });
+    auto posetf = std::make_shared<PoseCVT>("../config/transform.toml");
+    std::thread armor_tf([&] {
+        std::vector<Armor3d> arms;
+        while (true) {
+            auto [armors, verdict] = armor_buffer->pop();
+            if (!verdict)
+                continue;
+
+            arms.clear();
+            for (const auto &armor : armors) {
+                auto tf_armor = posetf->solve_absolute(armor);
+
+                // print some stats
+                spdlog::info(
+                    "Armor center: ({},{},{})",
+                    tf_armor.p_barrel.center_3d.at<double>(0),
+                    tf_armor.p_barrel.center_3d.at<double>(1),
+                    tf_armor.p_barrel.center_3d.at<double>(2)
+                );
+                spdlog::info("Armor distance: {}", tf_armor.p_barrel.distance);
+                spdlog::info("Armor roll: {}", tf_armor.p_barrel.roll);
+                spdlog::info("Armor pitch: {}", tf_armor.p_barrel.pitch);
+                spdlog::info("Armor yaw: {}", tf_armor.p_barrel.yaw);
+                spdlog::info("Armor direction: {}", tf_armor.p_barrel.direction);
+                spdlog::info("Armor bullet flying time: {}", tf_armor.bullet_flying_time);
+                spdlog::info("Armor pitch relative to barrel: {}", tf_armor.pitch_relative_to_barrel);
+                spdlog::info("Armor yaw relative to barrel: {}", tf_armor.yaw_relative_to_barrel);
+            }
+            to_filter->push(arms);
         }
     });
 
@@ -71,5 +110,7 @@ int main() {
     port_checker.join();
     img_producer.join();
     img_consumer.join();
+    armor_tf.join();
+
     return 0;
 }

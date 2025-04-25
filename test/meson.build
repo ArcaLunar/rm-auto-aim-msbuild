@@ -5,6 +5,7 @@ tportcam = executable('test_portcam', 'test_portcam.cpp', dependencies: all_dep)
 tlac = executable('test_lac', 'test_lightbar_armor_config.cpp', dependencies: all_dep)
 tclassify = executable('test_classify', 'test_classifier.cpp', dependencies: all_dep)
 tcpd = executable('test_detect', 'test_camportdetect.cpp', dependencies: all_dep)
+tcam2tf = executable('test_cam2tf', 'test_cam2tf.cpp', dependencies: all_dep)
 
 # generate tests
 test('test_debug', gdebug)
@@ -14,3 +15,4 @@ test('test_portcam', tportcam)
 test('test_lac', tlac)
 test('test_classifier', tclassify)
 test('test_detect', tcpd)
+test('test_cam2tf', tcam2tf)
