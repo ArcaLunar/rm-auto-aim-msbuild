@@ -124,3 +124,17 @@ std::vector<RawArmor> OpenCVDetector::pair_lightbars(std::vector<LightBar> &ligh
 
     return armors;
 }
+
+bool OpenCVDetector::check_mispair(const RawArmor &armor, const std::vector<LightBar> &lights) {
+    auto &points = armor.vertices;
+    auto rect    = cv::boundingRect(points);
+    for (const auto &light : lights) {
+        if (light.center() == armor.left.center() || light.center() == armor.right.center())
+            continue; // 忽略已经匹配的灯条
+
+        if (cv::pointPolygonTest(points, light.center(), false) >= 0)
+            return true;
+    }
+
+    return false;
+}
