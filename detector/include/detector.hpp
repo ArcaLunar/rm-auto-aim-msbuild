@@ -9,7 +9,7 @@
 class OpenCVDetector {
   public:
     OpenCVDetector(std::string path);
-    void draw_results();
+    void draw_results_to_image(cv::Mat &img, const std::vector<RawArmor> &armors);
     /**
      * @brief 对读取的图像进行识别
      */

@@ -138,3 +138,34 @@ bool OpenCVDetector::check_mispair(const RawArmor &armor, const std::vector<Ligh
 
     return false;
 }
+
+void OpenCVDetector::draw_results_to_image(cv::Mat &img, const std::vector<RawArmor> &armors) {
+    if (!options.detector.display_image)
+        return;
+
+    // draw armors
+    for (const auto &armor : armors) {
+        std::vector<cv::Point> v1{armor.vertices[0], armor.vertices[1]};
+        std::vector<cv::Point> v2{armor.vertices[1], armor.vertices[2]};
+        std::vector<cv::Point> v3{armor.vertices[2], armor.vertices[3]};
+        std::vector<cv::Point> v4{armor.vertices[3], armor.vertices[0]};
+        cv::polylines(img, v1, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v2, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v3, true, cv::Scalar(0, 0, 255), 2);
+        cv::polylines(img, v4, true, cv::Scalar(0, 0, 255), 2);
+        cv::putText(
+            img,
+            armor.type == ArmorType::Small ? "Small" : "Big",
+            armor.center,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 255, 0),
+            2
+        );
+    }
+
+    // draw image
+    cv::Mat tmp;
+    cv::imshow("Annotated Image", img);
+    cv::waitKey();
+}
