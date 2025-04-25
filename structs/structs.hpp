@@ -5,6 +5,7 @@
 //! Useful Macro Definitions
 //! ========================================================
 
+#include "toml++/toml.h"
 #include <chrono>
 #include <cstdint>
 #include <opencv2/core.hpp>
@@ -136,6 +137,25 @@ struct StampedRecvMsg {
     RecvMsgType msg;
 };
 
+struct RMColor {
+    static constexpr int Blue    = 0;
+    static constexpr int Unknown = 1;
+    static constexpr int Red     = 2;
+    int ally, enemy;
+
+    RMColor() {
+        auto T   = toml::parse_file("../config/game.toml");
+        auto str = T["ally_color"].value_or("blue");
+
+        if (str == "blue")
+            this->ally = RMColor::Blue, this->enemy = RMColor::Red;
+        else if (str == "red")
+            this->ally = RMColor::Red, this->enemy = RMColor::Blue;
+        else
+            this->ally = this->enemy = RMColor::Unknown;
+    }
+};
+
 //! ========================================================
 //! Camera Data Classes
 //! ========================================================
@@ -232,7 +252,6 @@ struct RawArmor {
     // 判断装甲板是否合法
     bool is_valid(const ArmorConfig &config);
 };
-
 
 struct AnnotatedArmorInfo {
     RawArmor armor;

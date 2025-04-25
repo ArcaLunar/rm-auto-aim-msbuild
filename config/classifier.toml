@@ -1,0 +1,2 @@
+model_path = "../model.onnx"
+confidence_threshold = 0.5

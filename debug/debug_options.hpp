@@ -9,21 +9,39 @@
 struct DebugOptions {
     // *======== Debug Config Area ========* //
     std::atomic_bool spd_timer = true;
+
     struct {
         std::atomic_bool initialization = true;
         std::atomic_bool capture        = true;
     } camera;
+
     struct {
         std::atomic_bool initialization = true;
         std::atomic_bool inspect_data   = true;
     } port;
+
     struct {
         std::atomic_bool show_detail = true;
     } lightbar;
+
     struct {
-        std::atomic_bool show_detail = true;
+        std::atomic_bool show_detail      = true;
         std::atomic_bool procedure_detail = true;
     } armor;
+
+    struct {
+        std::atomic_bool init         = true;
+        std::atomic_bool show_roi     = true;
+        std::atomic_bool model_output = true;
+        std::atomic_bool show_ignore  = true;
+    } classifier;
+
+    struct {
+        std::atomic_bool init           = true;
+        std::atomic_bool display_image  = false;
+        std::atomic_bool preprocess     = true;
+        std::atomic_bool pair_lightbars = true;
+    } detector;
 
     DebugOptions() {
         try {
@@ -40,7 +58,7 @@ struct DebugOptions {
             // * init for light bar debugging
             lightbar.show_detail = config["detector"]["lightbar"]["show_detail"].value_or(false);
             // * init for armor debugging
-            armor.show_detail = config["detector"]["armor"]["show_detail"].value_or(false);
+            armor.show_detail      = config["detector"]["armor"]["show_detail"].value_or(false);
             armor.procedure_detail = config["detector"]["armor"]["procedure_detail"].value_or(false);
         } catch (const toml::parse_error &err) {
             spdlog::info("Error parsing debug.toml: {}", err.description());

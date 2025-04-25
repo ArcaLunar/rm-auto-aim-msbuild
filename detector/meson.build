@@ -3,6 +3,7 @@ sources = files(
     'src/lightbar_config.cpp',
     'src/armor.cpp',
     'src/lightbar.cpp',
+    'src/classifier.cpp',
 )
 
 include_headers = include_directories('./include')

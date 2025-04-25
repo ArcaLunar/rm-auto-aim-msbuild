@@ -1,4 +1,4 @@
-#include "armor.hpp"
+#include "structs.hpp"
 
 int main() {
     LightBarConfig config("../config/detector.toml");
