@@ -35,11 +35,8 @@ class Classifier {
      */
     std::vector<cv::Mat> extract_region_of_interest(const cv::Mat &img, const std::vector<RawArmor> &armors);
 
-    void load_labels(std::vector<int> &vec);
-
   private:
     cv::dnn::Net net;
-    std::vector<int> to_ignore, labels;
     double confidence_threshold;
 
   protected:

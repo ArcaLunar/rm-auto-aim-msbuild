@@ -5,16 +5,18 @@
 #include "detector.hpp"
 #include "structs.hpp"
 #include <memory>
-#include <string>
 #include <vector>
 
 class Annotator {
   public:
-    Annotator(std::string path);
+    Annotator() {
+        this->detector   = std::make_shared<OpenCVDetector>("../config/detector.toml");
+        this->classifier = std::make_shared<Classifier>("../config/classifier.toml");
+    }
 
     /**
      * @brief 根据摄像机拍到的图像和接受到的电控消息，进行标定、识别
-     * 
+     *
      * @param frame 摄像机拍到的图像
      * @param msg 电控消息
      * @return std::vector<AnnotatedArmorInfo> 一帧图像中所有的装甲板信息
@@ -24,6 +26,7 @@ class Annotator {
   private:
     std::shared_ptr<OpenCVDetector> detector;
     std::shared_ptr<Classifier> classifier;
+    std::vector<int> labels;
 };
 
 #endif

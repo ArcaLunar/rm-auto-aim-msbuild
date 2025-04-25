@@ -4,6 +4,8 @@ sources = files(
     'src/armor.cpp',
     'src/lightbar.cpp',
     'src/classifier.cpp',
+    'src/detector.cpp',
+    'src/annotator.cpp',
 )
 
 include_headers = include_directories('./include')

@@ -175,7 +175,7 @@ struct RawImageFrame {
 
 struct IMUInfo {
     double roll{}, pitch{}, yaw{};
-    std::chrono::time_point<std::chrono::system_clock> timestamp;
+    std::chrono::steady_clock::time_point timestamp;
 
     void load_from_recvmsg(const StampedRecvMsg &msg);
     cv::Mat rotation() const;
@@ -255,9 +255,9 @@ struct RawArmor {
 
 struct AnnotatedArmorInfo {
     RawArmor armor;
-    int result; // id 代表兵种
+    int result; // 代表兵种
     IMUInfo imu_info;
-    std::chrono::time_point<std::chrono::system_clock> timestamp;
+    std::chrono::steady_clock::time_point timestamp;
 };
 
 //! ========================================================

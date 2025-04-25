@@ -44,6 +44,10 @@ struct DebugOptions {
         std::atomic_bool pair_lightbars   = true;
     } detector;
 
+    struct {
+        std::atomic_bool annotate = true;
+    } annotator;
+
     DebugOptions() {
         try {
             toml::table config = toml::parse_file("../config/debug.toml");
