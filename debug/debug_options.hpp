@@ -37,10 +37,11 @@ struct DebugOptions {
     } classifier;
 
     struct {
-        std::atomic_bool init           = true;
-        std::atomic_bool display_image  = false;
-        std::atomic_bool preprocess     = true;
-        std::atomic_bool pair_lightbars = true;
+        std::atomic_bool init             = true;
+        std::atomic_bool display_image    = false;
+        std::atomic_bool preprocess       = true;
+        std::atomic_bool detect_lightbars = true;
+        std::atomic_bool pair_lightbars   = true;
     } detector;
 
     DebugOptions() {

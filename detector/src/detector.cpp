@@ -50,14 +50,14 @@ cv::Mat OpenCVDetector::preprocess_image(const cv::Mat &src) {
 
 std::vector<LightBar> OpenCVDetector::detect_lightbars(const cv::Mat &rgb, const cv::Mat &binary) {
     // 用 contour 轮廓找出灯条
-    if (options.detector.pair_lightbars)
+    if (options.detector.detect_lightbars)
         spdlog::info("detecting lightbars");
 
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
     cv::findContours(binary, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
 
-    if (options.detector.pair_lightbars)
+    if (options.detector.detect_lightbars)
         spdlog::info("found {} contours, filtering lightbars", contours.size());
 
     std::vector<LightBar> lights;
@@ -76,12 +76,51 @@ std::vector<LightBar> OpenCVDetector::detect_lightbars(const cv::Mat &rgb, const
             lights.push_back(light);
 
         // 绘制灯条（调试用）
-        if (options.detector.pair_lightbars)
+        if (options.detector.detect_lightbars)
             cv::ellipse(this->debug_frame, light.ellipse, cv::Scalar(0, 0, 255), 2);
     }
 
-    if (options.detector.pair_lightbars)
+    if (options.detector.detect_lightbars)
         spdlog::info("detected {} lightbars", lights.size());
 
     return lights;
+}
+
+std::vector<RawArmor> OpenCVDetector::pair_lightbars(std::vector<LightBar> &lights) {
+    if (options.detector.pair_lightbars)
+        spdlog::info("start pairing");
+    std::vector<RawArmor> armors;
+    std::sort(lights.begin(), lights.end(), [](const LightBar &a, const LightBar &b) {
+        return a.center().x < b.center().x;
+    });
+
+    // 两两枚举进行匹配
+    for (auto light1 = lights.begin(); light1 != lights.end(); light1++) {
+        for (auto light2 = light1 + 1; light2 != lights.end(); light2++) {
+            RawArmor tmp(*light1, *light2);
+            // 检查灯条中间是否还夹着其他灯条，是的话不可能组成装甲板
+            if (options.detector.pair_lightbars)
+                spdlog::info("checking mispair");
+            if (this->check_mispair(tmp, lights)) {
+                if (options.detector.pair_lightbars)
+                    spdlog::error("mispair_check failed");
+                continue;
+            } else if (options.detector.pair_lightbars)
+                spdlog::info("mispair_check passed");
+
+            // 检查组成的装甲板是否合法
+            if (options.detector.pair_lightbars)
+                spdlog::info("doing armor_validation check");
+            if (tmp.is_valid(this->acfg)) {
+                if (options.detector.pair_lightbars)
+                    spdlog::info("armor_validation passed");
+                armors.push_back(tmp);
+            } else if (options.detector.pair_lightbars)
+                spdlog::error("armor_validation failed");
+        }
+    }
+    if (options.detector.pair_lightbars)
+        spdlog::info("paired {} armors", armors.size());
+
+    return armors;
 }
