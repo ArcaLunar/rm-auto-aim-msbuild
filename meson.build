@@ -36,6 +36,7 @@ subdir('camera')
 subdir('port')
 subdir('detector')
 subdir('tf')
+subdir('tracker')
 
 subdir('app')
 subdir('test')

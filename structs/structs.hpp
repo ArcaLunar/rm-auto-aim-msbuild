@@ -300,4 +300,23 @@ struct Armor3d : AnnotatedArmorInfo {
     poes_under_barrel_coord p_barrel;
 };
 
+
+// ========================================================
+// Fire Permission Related Data Structures
+// ========================================================
+
+/**
+ * @brief 预测下一帧（枪管系下的）装甲板的位置
+ *
+ */
+
+struct PredictedPosition {
+    double x, y, z;
+    cv::Mat center_3d;
+    double direction, distance;
+    double pitch, yaw;
+
+    int tracking_id;
+};
+
 #endif
