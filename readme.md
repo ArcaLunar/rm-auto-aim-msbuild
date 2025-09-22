@@ -4,39 +4,34 @@
   - [x] Basic
     - <del>Open camera</del>
     - <del>Set configs</del>
-  - [ ] (Buggy) Image Capture
+  - [x] Image Capture
     - <del>Pixel Format</del>
     - Grab Image
 - [x] Serial port
   - [x] Connection
   - [x] Read
   - [x] Send
-  - [ ] Reconection
+  - [x] Reconection
 - [x] Detector
   - [x] Basic
     - <del>Data flow tested</del>
     - Able to return 2D coordinate
-  - [ ] Accuracy?
+  - [x] Accuracy?
     - Traditional CV Method
 - [x] Policy
-  - [ ] Armor Selection
+  - [x] Armor Selection
     - <del>Simple</del>
     - Complicated
-- [ ] Transform
-  - **[Warning] Untested**
-  - **(Part of)**
+- [x] Transform
   - [x] Util functions
   - [x] Cordinate Transform
   - [x] Solve PNP
-- [ ] Tracker
-  - **[Warning] Untested**
-  - **(Part of)**
+- [x] Tracker
   - [x] KF
   - [x] **(Part of)** EKF
-- [ ] Firing
-  - **Untested**
-  - [ ] Simple control
-  - [ ] Serial Port Control
+- [x] Firing
+  - [x] Simple control
+  - [x] Serial Port Control
 
 # Overview
 
